@@ -1,0 +1,242 @@
+#!/bin/sh
+
+scala_version=2.12.8
+script_dir="$(dirname "$0")"
+abs_script_dir="$(readlink -f "$script_dir")"
+td=~/.tsk
+bloop_cmd="${td}/bloop"
+cs_cmd="${td}/cs"
+download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
+module="$( basename "$0" | sed 's/\.scala//g' )"
+scala_major_minor_ver="$(echo "${scala_version}" | sed 's/\([0-9].[0-9]\+\).*/\1/g')"
+
+tsk() {
+  $@
+}
+
+core_deps() {
+  cat << EOF
+    org.scala-lang:scala-compiler:${scala_version}
+    jline:jline:2.14.6
+EOF
+}
+
+# The user overrides this with their own dependency list specification
+dependencies() {
+  cat << EOF
+EOF
+}
+
+resolve_double_colons() {
+  sed "s/\(.*\)::\(.*\):\(.*\)/\1:\2_${scala_major_minor_ver}:\3/g"
+}
+
+cs_fetch() {
+  "$cs_cmd" fetch -q --scala-version "${scala_version}" "$@"
+}
+
+resolved_deps() {
+  dependencies | resolve_double_colons
+}
+
+install_coursier() {
+  [ -e "$cs_cmd" ] && return 0;
+  >&2 echo "installing coursier"
+  platform="$(uname)_$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')"
+  case "${platform}" in
+    "Linux_libc.musl")
+      # the assumption: root on alpine in docker
+      # may cause troubles down the road
+      apk update && apk add openjdk11-jdk
+      cs_url="https://git.io/coursier-cli";;
+    "Linux_libc.so.6")
+      cs_url="https://git.io/coursier-cli-linux";;
+    *)
+      >&2 echo "Platform [${platform}] not supported (yet?)"
+      return 1;;
+  esac
+
+  ${download_as} "$cs_cmd" "$cs_url"
+  chmod +x "$cs_cmd"
+}
+
+install_bloop() {
+  [ -e "$bloop_cmd" ] && return 0;
+  >&2 echo "installing bloop"
+  $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
+}
+
+generate_bloop_config() {
+  >&2 echo "generating bloop config"
+  mkdir -p "${script_dir}/.bloop"
+  bloop_config_template > "${script_dir}/.bloop/${module}.json"
+}
+
+kill_server() {
+  >&2 echo "killing server"
+  # TODO that'll work on Alpine only
+  kill $( /usr/lib/jvm/java-11-openjdk/bin/jps | awk '/Server/ {print $1}' )
+}
+
+run() {
+  install_coursier
+  install_bloop
+  cs_fetch --sources --javadoc --default $(core_deps) $(resolved_deps)
+  generate_bloop_config
+  >&2 echo "detecting bloop hangup"
+  ( ( /root/.tsk/bloop about & ( sleep 1; echo timeout ) ); wait ) | ( read status; if [ "$status" = "timeout" ]; then kill_server; fi; )
+  >&2 echo exec $bloop_cmd run --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
+  exec $bloop_cmd run --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
+}
+
+bloop_config_template() {
+  cat << EOF
+{
+    "version": "1.4.0",
+    "project": {
+        "name": "${module}",
+        "directory": "${abs_script_dir}",
+        "workspaceDir": "${abs_script_dir}",
+        "sources": [
+            "${abs_script_dir}"
+        ],
+        "dependencies": [
+        ],
+        "classpath": [
+            $(cs_fetch --default $(resolved_deps) | sed 's/\(.*\)/"\1",/g')
+            "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar"
+        ],
+        "out": "${abs_script_dir}/.bloop/${module}",
+        "classesDir": "${abs_script_dir}/.bloop/${module}/scala-2.12/classes",
+        "resources": [],
+        "scala": {
+            "organization": "org.scala-lang",
+            "name": "scala-compiler",
+            "version": "${scala_version}",
+            "options": [
+
+            ],
+            "jars": [
+                "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar",
+                "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/${scala_version}/scala-compiler-${scala_version}.jar",
+                "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/jline/jline/2.14.6/jline-2.14.6.jar",
+                "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_2.12/1.0.6/scala-xml_2.12-1.0.6.jar",
+                "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/${scala_version}/scala-reflect-${scala_version}.jar"
+            ],
+            "analysis": "${abs_script_dir}/.bloop/${module}/inc_compile_2.12.zip",
+            "setup": {
+                "order": "mixed",
+                "addLibraryToBootClasspath": true,
+                "addCompilerToClasspath": false,
+                "addExtraJarsToClasspath": false,
+                "manageBootClasspath": true,
+                "filterLibraryFromClasspath": true
+            }
+        },
+        "java": {
+            "options": [
+
+            ]
+        },
+        "test": {
+            "frameworks": [
+                {
+                    "names": [
+                        "org.scalacheck.ScalaCheckFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "org.specs2.runner.Specs2Framework",
+                        "org.specs2.runner.SpecsFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "org.specs.runner.SpecsFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "org.scalatest.tools.Framework",
+                        "org.scalatest.tools.ScalaTestFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "com.novocode.junit.JUnitFramework"
+                    ]
+                }
+            ],
+            "options": {
+                "excludes": [
+
+                ],
+                "arguments": [
+
+                ]
+            }
+        },
+        "resolution": {
+            "modules": [
+                {
+                    "organization": "org.scala-lang",
+                    "name": "scala-library",
+                    "version": "${scala_version}",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "scala-library",
+                            "checksum": {
+                                "type": "sha1",
+                                "digest": "36b234834d8f842cdde963c8591efae6cf413e3f"
+                            },
+                            "path": "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar"
+                        },
+                        {
+                            "name": "scala-library",
+                            "classifier": "sources",
+                            "path": "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}-sources.jar"
+                        },
+                        {
+                            "name": "scala-library",
+                            "classifier": "javadoc",
+                            "path": "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}-javadoc.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scala-lang",
+                    "name": "scala-library",
+                    "version": "${scala_version}",
+                    "configurations": "optional",
+                    "artifacts": [
+                        {
+                            "name": "scala-library",
+                            "checksum": {
+                                "type": "sha1",
+                                "digest": "36b234834d8f842cdde963c8591efae6cf413e3f"
+                            },
+                            "path": "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar"
+                        },
+                        {
+                            "name": "scala-library",
+                            "classifier": "sources",
+                            "path": "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}-sources.jar"
+                        },
+                        {
+                            "name": "scala-library",
+                            "classifier": "javadoc",
+                            "path": "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}-javadoc.jar"
+                        }
+                    ]
+                }
+            ]
+        },
+        "tags": [
+            "library"
+        ]
+    }
+}
+EOF
+}
