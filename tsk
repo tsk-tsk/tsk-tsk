@@ -71,93 +71,6 @@ dependencies_sha() {
   dependencies | sha256sum | tr -d ' -'
 }
 
-generate_bloop_config() {
-  if grep -q "tsk_dependencies_sha.*$(dependencies_sha)" "${bloop_module_config}" 2>/dev/null
-  then
-    # good, config can stay
-    true
-  else
-    >&2 echo "generating bloop config"
-    cs_fetch --sources --javadoc --default $(core_deps) $(resolved_deps) --json-output-file "${cs_fetch_result}" > /dev/null
-    bloop_config_template > "${bloop_module_config}"
-    rm "${cs_fetch_result}"
-  fi
-}
-
-kill_build_server() {
-  >&2 echo "killing build server"
-  # TODO that'll work on Alpine only
-  kill $( /usr/lib/jvm/java-11-openjdk/bin/jps | awk '/Server/ {print $1}' )
-}
-
-unfreeze_bloop() {
-  ( "${bloop_cmd}" about & ( sleep 1; echo "timeout" ) ) | ( head -n 1 | read status; if [ "$status" = "timeout" ]; then kill_build_server; fi; )
-}
-
-cs_report_0_1_0_to_bloop_resolution_modules() {
-
-  sed 's/"file":"/\nFILE /g
-       s/"coord":"/\nCOORD /g
-       s/"/\n/g' | \
-    grep -e FILE -e COORD | \
-    sed 's/FILE //g
-         s/COORD //g' | \
-    awk -F: '{
-      group=$1
-      artifact=$2
-      version=$3
-
-      getline
-      path=$1
-      gsub(/.jar$/, "", path)
-
-      jar_path=(path ".jar")
-      javadoc_path=(path "-javadoc.jar")
-      sources_path=(path "-sources.jar")
-      print(group, artifact, version, jar_path, javadoc_path, sources_path)
-    }' | (
-    after_first="false"
-    while read -r group artifact version jar_path javadoc_path sources_path
-    do
-      [ "${after_first}" = "true" ] && echo ","
-      cat << EOF
-                {
-                    "organization": "${group}",
-                    "name": "${artifact}",
-                    "version": "${version}",
-                    "configurations": "default",
-                    "artifacts": [
-                        {
-                            "name": "${artifact}",
-                            "path": "${jar_path}"
-                        },
-                        {
-                            "name": "${artifact}",
-                            "classifier": "sources",
-                            "path": "${sources_path}"
-                        },
-                        {
-                            "name": "${artifact}",
-                            "classifier": "javadoc",
-                            "path": "${javadoc_path}"
-                        }
-                    ]
-                }
-EOF
-    after_first="true"
-    done
-    )
-}
-
-run() {
-  install_coursier
-  install_bloop
-  mkdir -p "${bloop_dir}"
-  generate_bloop_config
-  unfreeze_bloop
-  exec "${bloop_cmd}" run --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
-}
-
 bloop_config_template() {
   cat << EOF
 {
@@ -256,4 +169,91 @@ bloop_config_template() {
     }
 }
 EOF
+}
+
+generate_bloop_config() {
+  if grep -q "tsk_dependencies_sha.*$(dependencies_sha)" "${bloop_module_config}" 2>/dev/null
+  then
+    # good, config can stay
+    true
+  else
+    >&2 echo "generating bloop config"
+    cs_fetch --sources --javadoc --default $(core_deps) $(resolved_deps) --json-output-file "${cs_fetch_result}" > /dev/null
+    bloop_config_template > "${bloop_module_config}"
+    rm "${cs_fetch_result}"
+  fi
+}
+
+kill_build_server() {
+  >&2 echo "killing build server"
+  # TODO that'll work on Alpine only
+  kill $( /usr/lib/jvm/java-11-openjdk/bin/jps | awk '/Server/ {print $1}' )
+}
+
+unfreeze_bloop() {
+  ( "${bloop_cmd}" about & ( sleep 1; echo "timeout" ) ) | ( head -n 1 | read status; if [ "$status" = "timeout" ]; then kill_build_server; fi; )
+}
+
+cs_report_0_1_0_to_bloop_resolution_modules() {
+
+  sed 's/"file":"/\nFILE /g
+       s/"coord":"/\nCOORD /g
+       s/"/\n/g' | \
+    grep -e FILE -e COORD | \
+    sed 's/FILE //g
+         s/COORD //g' | \
+    awk -F: '{
+      group=$1
+      artifact=$2
+      version=$3
+
+      getline
+      path=$1
+      gsub(/.jar$/, "", path)
+
+      jar_path=(path ".jar")
+      javadoc_path=(path "-javadoc.jar")
+      sources_path=(path "-sources.jar")
+      print(group, artifact, version, jar_path, javadoc_path, sources_path)
+    }' | (
+    after_first="false"
+    while read -r group artifact version jar_path javadoc_path sources_path
+    do
+      [ "${after_first}" = "true" ] && echo ","
+      cat << EOF
+                {
+                    "organization": "${group}",
+                    "name": "${artifact}",
+                    "version": "${version}",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "${artifact}",
+                            "path": "${jar_path}"
+                        },
+                        {
+                            "name": "${artifact}",
+                            "classifier": "sources",
+                            "path": "${sources_path}"
+                        },
+                        {
+                            "name": "${artifact}",
+                            "classifier": "javadoc",
+                            "path": "${javadoc_path}"
+                        }
+                    ]
+                }
+EOF
+    after_first="true"
+    done
+    )
+}
+
+run() {
+  install_coursier
+  install_bloop
+  mkdir -p "${bloop_dir}"
+  generate_bloop_config
+  unfreeze_bloop
+  exec "${bloop_cmd}" run --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
 }
