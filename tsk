@@ -1,6 +1,6 @@
 #!/bin/sh
 
-scala_version=2.12.8
+scala_version=2.12.12
 script_dir="$(dirname "$0")"
 abs_script_dir="$(readlink -f "$script_dir")"
 td=~/.tsk
@@ -191,7 +191,15 @@ kill_build_server() {
 }
 
 unfreeze_bloop() {
-  ( "${bloop_cmd}" about & ( sleep 1; echo "timeout" ) ) | ( head -n 1 | read status; if [ "$status" = "timeout" ]; then kill_build_server; fi; )
+  timeout=1s
+  ( "${bloop_cmd}" about & ( sleep 1; echo "timeout" ) ) | (
+    head -n 1 | read status
+    if [ "$status" = "timeout" ]
+    then
+      >&2 echo "no response from build server in ${timeout}"
+      kill_build_server
+    fi
+  )
 }
 
 cs_report_0_1_0_to_bloop_resolution_modules() {
