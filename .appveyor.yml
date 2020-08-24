@@ -1,0 +1,8 @@
+image:
+  - Mac
+  - Ubuntu2004
+
+build_script:
+  - bash -c "echo bash is there"
+  - curl --version
+  - java -version
