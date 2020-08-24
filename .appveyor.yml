@@ -1,9 +1,13 @@
 image:
   - macos
   - macos-mojave
+  - Ubuntu
   - Ubuntu2004
+  - Ubuntu1604
 
 build_script:
-  - bash -c "echo bash is there"
+  - bash --version
   - curl --version
-  - java -version
+  - uname -a
+  - "[ -e /etc/os-release ] && cat /etc/os-release"
+  - "[ -e /etc/alpine-release ] && cat /etc/alpine-release"
