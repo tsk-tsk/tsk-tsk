@@ -1,5 +1,6 @@
 image:
-  - Mac
+  - macos
+  - macos-mojave
   - Ubuntu2004
 
 build_script:
