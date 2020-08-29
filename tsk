@@ -1,5 +1,5 @@
 #!/bin/sh
-set +x
+set -x
 # variables and functions designed to be overridden by the user
 # -------------------------------------------------------------
 
@@ -43,6 +43,7 @@ cs_cmd="${td}/cs"
 download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
 module="$( basename "$0" | sed 's/\.scala//g' )"
 scala_major_minor_ver="$(echo "${scala_version}" | sed 's/\([0-9].[0-9]\+\).*/\1/g')"
+echo scala_major_minor_ver is ${scala_major_minor_ver}
 
 # bloop and coursier internals
 bloop_dir="${script_dir}/.bloop"
