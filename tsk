@@ -24,14 +24,14 @@ dependencies() { echo; }
 # Needs to output the list to the stdout, one line per repository URL
 # (the values listed here are passed to `-r` option of Coursier),
 # for more information see: https://get-coursier.io/docs/other-repositories
-repositories() { echo; }
+repositories() { true; }
 
 # List of artifacts in explicitly stated versions that are to be used
 # instead of the results of the automatic dependency resolution process.
 # Commonly used when you depend on an older version of a library and the newer version is not backward compatible.
 # Needs to output the list to the stdout, one line per artifact (in format group::artifact:version as
 # the values are passed to the `--force-version` option of Coursier).
-forced_versions() { echo; }
+forced_versions() { true; }
 
 # variables and functions internal to tsk
 # ---------------------------------------
@@ -95,7 +95,7 @@ install_coursier() {
   esac
   ${download_as} "$cs_cmd" "$cs_url"
   chmod +x "$cs_cmd"
-  (command -v xattr && xattr -d com.apple.quarantine cs) || true
+  (command -v xattr && xattr -d com.apple.quarantine "$cs_cmd") || true
 }
 
 install_bloop() {
