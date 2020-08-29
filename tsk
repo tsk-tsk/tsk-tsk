@@ -1,5 +1,5 @@
 #!/bin/sh
-
+set +x
 # variables and functions designed to be overridden by the user
 # -------------------------------------------------------------
 
