@@ -42,7 +42,7 @@ bloop_cmd="${td}/bloop"
 cs_cmd="${td}/cs"
 download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
 module="$( basename "$0" | sed 's/\.scala//g' )"
-scala_major_minor_ver="$(echo "${scala_version}" | sed 's/\([0-9].[0-9]\+\).*/\1/g')"
+scala_major_minor_ver="$(echo "${scala_version}" | awk -F. '{print $1 "." $2}')"
 echo scala_major_minor_ver is ${scala_major_minor_ver}
 
 # bloop and coursier internals
