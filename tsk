@@ -1,6 +1,40 @@
 #!/bin/sh
 
+# variables and functions designed to be overridden by the user
+# -------------------------------------------------------------
+
+# version of Scala to be used in compilation and in resolution of libraries
 scala_version=2.12.12
+
+# Dependency list specification
+# in format used by Coursier (group::artifact:version or group:artifact_scalaversion:version).
+# Needs to output the list to the stdout, one line per dependency.
+# Example:
+#
+# dependencies() {
+#   echo '
+#     com.typesafe.play::play-json:2.8.2
+#     org.tpolecat::doobie-core:0.9.0
+#   '
+# }
+dependencies() { echo; }
+
+# List of custom artifact repository URLs, which are used in dependency resolution
+# in addition to the well-known public maven repositories.
+# Needs to output the list to the stdout, one line per repository URL
+# (the values listed here are passed to `-r` option of Coursier),
+# for more information see: https://get-coursier.io/docs/other-repositories
+repositories() { echo; }
+
+# List of artifacts in explicitly stated versions that are to be used
+# instead of the results of the automatic dependency resolution process.
+# Commonly used when you depend on an older version of a library and the newer version is not backward compatible.
+# Needs to output the list to the stdout, one line per artifact (in format group::artifact:version as
+# the values are passed to the `--force-version` option of Coursier).
+forced_versions() { echo; }
+
+# variables and functions internal to tsk
+# ---------------------------------------
 script_dir="$(dirname "$0")"
 abs_script_dir="$(readlink -f "$script_dir")"
 td=~/.tsk
@@ -16,16 +50,10 @@ bloop_module_config="${bloop_dir}/${module}.json"
 cs_fetch_result="${bloop_dir}/cs_fetch_result.json"
 
 core_deps() {
-  cat << EOF
+  echo "
     org.scala-lang:scala-compiler:${scala_version}
     jline:jline:2.14.6
-EOF
-}
-
-# The user overrides this with their own dependency list specification
-dependencies() {
-  cat << EOF
-EOF
+  "
 }
 
 resolve_double_colons() {
@@ -33,11 +61,19 @@ resolve_double_colons() {
 }
 
 cs_fetch() {
-  "$cs_cmd" fetch -q --scala-version "${scala_version}" "$@"
+  "$cs_cmd" fetch -q \
+    --scala-version "${scala_version}" \
+    $(repositories | each_to_opt "-r") \
+    $(forced_versions | each_to_opt "--force-version") \
+    "$@"
 }
 
 resolved_deps() {
   dependencies | resolve_double_colons
+}
+
+each_to_opt() {
+  sed "s/\(.*\)/${1} \1/g"
 }
 
 install_coursier() {
@@ -52,13 +88,14 @@ install_coursier() {
       cs_url="https://git.io/coursier-cli";;
     "Linux_libc.so.6")
       cs_url="https://git.io/coursier-cli-linux";;
+    # TODO test support for macOS
     *)
-      >&2 echo "Platform [${platform}] not supported (yet?)"
-      return 1;;
+      >&2 echo "Platform [${platform}] may be not fully supported (yet?)"
+      cs_url=https://git.io/coursier-cli-macos
   esac
-
   ${download_as} "$cs_cmd" "$cs_url"
   chmod +x "$cs_cmd"
+  (command -v xattr && xattr -d com.apple.quarantine cs) || true
 }
 
 install_bloop() {
@@ -67,14 +104,20 @@ install_bloop() {
   $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
 }
 
-dependencies_sha() {
-  dependencies | sha256sum | tr -d ' -'
+build_inputs_sha() {
+  (
+    repositories
+    dependencies
+    echo "${scala_version}"
+    echo "${HOME}"
+    echo "${abs_script_dir}"
+  ) | sha256sum | tr -d ' -'
 }
 
 bloop_config_template() {
   cat << EOF
 {
-    "tsk_dependencies_sha": "$(dependencies_sha)",
+    "tsk_build_inputs_sha": "$(build_inputs_sha)",
     "version": "1.4.0",
     "project": {
         "name": "${module}",
@@ -172,7 +215,7 @@ EOF
 }
 
 generate_bloop_config() {
-  if grep -q "tsk_dependencies_sha.*$(dependencies_sha)" "${bloop_module_config}" 2>/dev/null
+  if grep -q "tsk_build_inputs_sha.*$(build_inputs_sha)" "${bloop_module_config}" 2>/dev/null
   then
     # good, config can stay
     true
@@ -184,6 +227,7 @@ generate_bloop_config() {
   fi
 }
 
+# TODO make this and unfreeze unnecessary by only using bloop for compilation
 kill_build_server() {
   >&2 echo "killing build server"
   # TODO that'll work on Alpine only

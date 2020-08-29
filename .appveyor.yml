@@ -1,9 +1,6 @@
 image:
   - macos
   - macos-mojave
-  - Ubuntu
-  - Ubuntu2004
-  - Ubuntu1604
 
 build_script:
   - bash --version
@@ -11,3 +8,4 @@ build_script:
   - uname -a
   - "if [ -e /etc/os-release ]; then cat /etc/os-release; fi"
   - "if [ -e /etc/alpine-release ]; then cat /etc/alpine-release; fi"
+  - examples/joke/Joke.scala
