@@ -62,7 +62,7 @@ resolve_double_colons() {
 
 cs_fetch() {
   "$cs_cmd" fetch -q \
-    --scala-version "${scala_version}" \
+    --scala-version "${scala_major_minor_ver}" \
     $(repositories | each_to_opt "-r") \
     $(forced_versions | each_to_opt "--force-version") \
     "$@"
