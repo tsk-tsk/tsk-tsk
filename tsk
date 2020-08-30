@@ -39,7 +39,7 @@ forced_versions() { true; }
 # variables and functions internal to tsk
 # ---------------------------------------
 script_dir="$(dirname "$0")"
-abs_script_dir="$(readlink -f "$script_dir")"
+abs_script_dir="$(cd "${script_dir}" || die "FATAL ERROR: Can't cd to the script directory, symbolic links not supported (yet?)"; pwd -P)"
 td=~/.tsk
 bloop_cmd="${td}/bloop"
 cs_cmd="${td}/cs"
@@ -330,6 +330,24 @@ die() { log "$@"; exit 1; }
 log() {
   >&2 echo "$@"
 }
+
+# some debugging
+log script dir is $script_dir
+log abs_script_dir is $abs_script_dir
+log td is $td
+log bloop_cmd is $bloop_cmd
+log cs_cmd is $cs_cmd
+log java_bin_dir is $java_bin_dir
+log p_with_custom_java is $p_with_custom_java
+log download_as is $download_as
+log module is $module
+log os is $os
+
+# bloop and coursier internals
+log bloop_dir is $bloop_dir
+log bloop_module_config is $bloop_module_config
+log cs_fetch_result is $cs_fetch_result
+
 
 run() {
   install_coursier          || die "FATAL ERROR: could not install Coursier"

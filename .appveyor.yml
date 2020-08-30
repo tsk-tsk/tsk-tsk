@@ -1,6 +1,6 @@
 image:
   - macos
-  - macos-mojave
+  - Ubuntu
 
 build_script:
   - bash --version
