@@ -104,7 +104,9 @@ coursier_cache_dir="$( [ "${os}" = "Darwin" ] && echo "${coursier_cache_dir_on_D
 install_bloop() {
   [ -e "$bloop_cmd" ] && return 0;
   log "installing bloop"
-  $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
+  # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
+  # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
+  $cs_cmd bootstrap ch.epfl.scala:bloopgun_2.12:1.4.3-27-dfdc9971 --standalone -o "${bloop_cmd}"
 }
 
 build_inputs_sha() {
