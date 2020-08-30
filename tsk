@@ -6,6 +6,9 @@ set -x
 # version of Scala to be used in compilation and in resolution of libraries
 scala_version=2.12.12
 
+# version of Java Virtual Machine to be used
+sdkman_java_version="8.0.265-open"
+
 # Dependency list specification
 # in format used by Coursier (group::artifact:version or group:artifact_scalaversion:version).
 # Needs to output the list to the stdout, one line per dependency.
@@ -40,6 +43,8 @@ abs_script_dir="$(readlink -f "$script_dir")"
 td=~/.tsk
 bloop_cmd="${td}/bloop"
 cs_cmd="${td}/cs"
+java_bin_dir="${HOME}/.sdkman/candidates/java/${sdkman_java_version}/bin"
+p_with_custom_java="${java_bin_dir}:${PATH}"
 download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
 module="$( basename "$0" | sed 's/\.scala//g' )"
 os=$(uname)
@@ -68,6 +73,11 @@ each_to_opt() {
   sed "s/\(.*\)/${1} \1/g"
 }
 
+install_sdkman_and_java() {
+  curl -s "https://get.sdkman.io?rcupdate=false" | bash
+  bash -c ". ${HOME}/.sdkman/bin/sdkman-init.sh; sdk install java ${sdkman_java_version}"
+}
+
 install_coursier() {
   [ -e "$cs_cmd" ] && return 0;
   log "installing coursier"
@@ -76,18 +86,19 @@ install_coursier() {
       case "$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')" in
         "libc.musl")
           # the assumption: root on alpine in docker
-          # may cause troubles down the road. TODO use SDKMAN! here
-          apk update && apk add openjdk11-jdk
+          # may cause troubles down the road.
+          apk add bash curl zip
+          install_sdkman_and_java
           cs_url="https://git.io/coursier-cli";;
         "libc.so.6")
           cs_url="https://git.io/coursier-cli-linux";;
       esac;;
     "Darwin")
+      install_sdkman_and_java
       cs_url=https://git.io/coursier-cli-macos;;
     *)
-      log "Platform [${platform}] is not supported (yet?)"
-      # TODO fallback to SDKMAN! here
-      return 1
+      log "Platform [${os}] is not officially supported (yet?)"
+      install_sdkman_and_java
   esac
   ${download_as} "$cs_cmd" "$cs_url"
   chmod +x "$cs_cmd"
@@ -241,7 +252,7 @@ kill_build_server() {
 
 unfreeze_bloop() {
   timeout=1s
-  ( "${bloop_cmd}" about & ( sleep 1; echo "timeout" ) ) | (
+  ( PATH="${p_with_custom_java}" "${bloop_cmd}" about & ( sleep 1; echo "timeout" ) ) | (
     head -n 1 | read status
     if [ "$status" = "timeout" ]
     then
@@ -318,5 +329,5 @@ run() {
   mkdir -p "${bloop_dir}"
   generate_bloop_config     || die "FATAL ERROR: could not generate Bloop configuration"
   unfreeze_bloop
-  exec "${bloop_cmd}" run --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
+  PATH="${p_with_custom_java}" exec "${bloop_cmd}" run --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
 }
