@@ -75,7 +75,7 @@ each_to_opt() {
 
 install_sdkman_and_java() {
   curl -s "https://get.sdkman.io?rcupdate=false" | bash
-  bash -c ". ${HOME}/.sdkman/bin/sdkman-init.sh; sdk install java ${sdkman_java_version}"
+  bash -c ". ${HOME}/.sdkman/bin/sdkman-init.sh; sdk list java; sdk install java ${sdkman_java_version}"
 }
 
 install_coursier() {
