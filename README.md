@@ -1,6 +1,6 @@
 # The Scripting Kit
 
-Truly Standalone Scala Scripts on Linux (Mac coming soon)
+Truly Standalone Scala Scripts on Linux and Mac
 
 ## Overview
 
@@ -22,7 +22,6 @@ with all Scala constructs (like packages) working as expected
 
 ## Planned features
 
-- macOS support
 - Repositories that require credentials; internet access via proxy
 - Easy migration to a full-blown Scala project when the script grows.
 The script is valid Scala so the existing tooling handles it perfectly well - the TSK-specific parts are hidden
@@ -40,7 +39,7 @@ It demonstrates usage of an some external libraries (sttp and circe):
 
 ```scala
 package app /* 2> /dev/null
-tsk_version=trunk; t="${HOME}/.tsk/tsk-${tsk_version}"
+tsk_version=0.0.3; t="${HOME}/.tsk/tsk-${tsk_version}"
 [ ! -e $t -o "$tsk_version" == "trunk" ] && (u="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/tsk"; mkdir -p $(dirname $t); wget -O $t $u || curl -fLo $t $u)
 . $t
 
@@ -76,7 +75,7 @@ object Joke extends App {
       Thread.sleep(3000)
       println(delivery)
     case Left(_) =>
-      println("Sorry, not joke this time")
+      println("Sorry, no joke this time")
   }
 }
 ```
@@ -84,8 +83,8 @@ object Joke extends App {
 ## Supported platforms
 
 - Ubuntu as a user
-- Alpine Linux with root privileges (usually not a problem within a Docker container).
-This is because Bash and Curl need to be installed in order for SDKMAN! to be able to install Java SDK.
+- Alpine Linux with root privileges (usually not a problem within a Docker container)
+- macOS
 
 ## Things to watch for
 

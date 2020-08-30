@@ -35,6 +35,6 @@ object Joke extends App {
       Thread.sleep(3000)
       println(delivery)
     case Left(_) =>
-      println("Sorry, not joke this time")
+      println("Sorry, no joke this time")
   }
 }

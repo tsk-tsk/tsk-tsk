@@ -3,9 +3,4 @@ image:
   - Ubuntu
 
 build_script:
-  - bash --version
-  - curl --version
-  - uname -a
-  - "if [ -e /etc/os-release ]; then cat /etc/os-release; fi"
-  - "if [ -e /etc/alpine-release ]; then cat /etc/alpine-release; fi"
   - examples/joke/Joke.scala
