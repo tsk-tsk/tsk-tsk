@@ -1,5 +1,5 @@
 #!/bin/sh
-set -x
+
 # variables and functions designed to be overridden by the user
 # -------------------------------------------------------------
 
@@ -331,5 +331,5 @@ run() {
   generate_bloop_config     || die "FATAL ERROR: could not generate Bloop configuration"
   unfreeze_bloop
   local PATH=${p_with_custom_java}
-  exec "${bloop_cmd}" run --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
+  exec "${bloop_cmd}" run --verbose --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
 }
