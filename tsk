@@ -117,6 +117,7 @@ install_bloop() {
   log "installing bloop"
   # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
   # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
+  local PATH=${p_with_custom_java}
   $cs_cmd bootstrap ch.epfl.scala:bloopgun_2.12:1.4.3-27-dfdc9971 --standalone -o "${bloop_cmd}"
 }
 
@@ -329,5 +330,6 @@ run() {
   mkdir -p "${bloop_dir}"
   generate_bloop_config     || die "FATAL ERROR: could not generate Bloop configuration"
   unfreeze_bloop
-  PATH="${p_with_custom_java}" exec "${bloop_cmd}" run --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
+  local PATH=${p_with_custom_java}
+  exec "${bloop_cmd}" run --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
 }
