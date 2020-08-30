@@ -70,7 +70,7 @@ each_to_opt() {
 
 install_coursier() {
   [ -e "$cs_cmd" ] && return 0;
-  >&2 echo "installing coursier"
+  log "installing coursier"
   case "${os}" in
     "Linux")
       case "$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')" in
@@ -85,7 +85,7 @@ install_coursier() {
     "Darwin")
       cs_url=https://git.io/coursier-cli-macos;;
     *)
-      >&2 echo "Platform [${platform}] is not supported (yet?)"
+      log "Platform [${platform}] is not supported (yet?)"
       # TODO fallback to SDKMAN! here
       return 1
   esac
@@ -103,7 +103,7 @@ coursier_cache_dir="$( [ "${os}" = "Darwin" ] && echo "${coursier_cache_dir_on_D
 
 install_bloop() {
   [ -e "$bloop_cmd" ] && return 0;
-  >&2 echo "installing bloop"
+  log "installing bloop"
   $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
 }
 
@@ -223,7 +223,7 @@ generate_bloop_config() {
     # good, config can stay
     true
   else
-    >&2 echo "generating bloop config"
+    log "generating bloop config"
     cs_fetch --sources --javadoc --default $(core_deps) $(dependencies) --json-output-file "${cs_fetch_result}" > /dev/null
     bloop_config_template > "${bloop_module_config}"
     rm "${cs_fetch_result}"
@@ -232,7 +232,7 @@ generate_bloop_config() {
 
 # TODO make this and unfreeze unnecessary by only using bloop for compilation
 kill_build_server() {
-  >&2 echo "killing build server"
+  log "killing build server"
   # TODO that'll work on Alpine only
   kill $( /usr/lib/jvm/java-11-openjdk/bin/jps | awk '/Server/ {print $1}' )
 }
@@ -243,7 +243,7 @@ unfreeze_bloop() {
     head -n 1 | read status
     if [ "$status" = "timeout" ]
     then
-      >&2 echo "no response from build server in ${timeout}"
+      log "no response from build server in ${timeout}"
       kill_build_server
     fi
   )
@@ -304,7 +304,11 @@ EOF
     )
 }
 
-die() { >&2 echo "$@"; exit 1; }
+die() { log "$@"; exit 1; }
+
+log() {
+  >&2 echo "$@"
+}
 
 run() {
   install_coursier          || die "FATAL ERROR: could not install Coursier"
