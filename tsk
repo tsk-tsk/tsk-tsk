@@ -42,8 +42,7 @@ bloop_cmd="${td}/bloop"
 cs_cmd="${td}/cs"
 download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
 module="$( basename "$0" | sed 's/\.scala//g' )"
-scala_major_minor_ver="$(echo "${scala_version}" | awk -F. '{print $1 "." $2}')"
-echo scala_major_minor_ver is ${scala_major_minor_ver}
+os=$(uname)
 
 # bloop and coursier internals
 bloop_dir="${script_dir}/.bloop"
@@ -57,13 +56,9 @@ core_deps() {
   "
 }
 
-resolve_double_colons() {
-  sed "s/\(.*\)::\(.*\):\(.*\)/\1:\2_${scala_major_minor_ver}:\3/g"
-}
-
 cs_fetch() {
   "$cs_cmd" fetch -q \
-    --scala-version "${scala_major_minor_ver}" \
+    --scala-version "${scala_version}" \
     $(repositories | each_to_opt "-r") \
     $(forced_versions | each_to_opt "--force-version") \
     "$@"
@@ -76,24 +71,35 @@ each_to_opt() {
 install_coursier() {
   [ -e "$cs_cmd" ] && return 0;
   >&2 echo "installing coursier"
-  platform="$(uname)_$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')"
-  case "${platform}" in
-    "Linux_libc.musl")
-      # the assumption: root on alpine in docker
-      # may cause troubles down the road
-      apk update && apk add openjdk11-jdk
-      cs_url="https://git.io/coursier-cli";;
-    "Linux_libc.so.6")
-      cs_url="https://git.io/coursier-cli-linux";;
-    # TODO test support for macOS
+  case "${os}" in
+    "Linux")
+      case "$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')" in
+        "libc.musl")
+          # the assumption: root on alpine in docker
+          # may cause troubles down the road. TODO use SDKMAN! here
+          apk update && apk add openjdk11-jdk
+          cs_url="https://git.io/coursier-cli";;
+        "libc.so.6")
+          cs_url="https://git.io/coursier-cli-linux";;
+      esac;;
+    "Darwin")
+      cs_url=https://git.io/coursier-cli-macos;;
     *)
-      >&2 echo "Platform [${platform}] may be not fully supported (yet?)"
-      cs_url=https://git.io/coursier-cli-macos
+      >&2 echo "Platform [${platform}] is not supported (yet?)"
+      # TODO fallback to SDKMAN! here
+      return 1
   esac
   ${download_as} "$cs_cmd" "$cs_url"
   chmod +x "$cs_cmd"
-  (command -v xattr && xattr -d com.apple.quarantine "$cs_cmd") || true
+  if [ "${os}" = "Darwin" ]
+  then
+    (command -v xattr && xattr -d com.apple.quarantine "$cs_cmd") || true
+  fi
 }
+
+coursier_cache_dir_on_Linux="${HOME}/.cache/coursier/v1"
+coursier_cache_dir_on_Darwin="${HOME}/Library/Caches/Coursier/v1"
+coursier_cache_dir="$( [ "${os}" = "Darwin" ] && echo "${coursier_cache_dir_on_Darwin}" || echo "${coursier_cache_dir_on_Linux}" )"
 
 install_bloop() {
   [ -e "$bloop_cmd" ] && return 0;
@@ -127,7 +133,7 @@ bloop_config_template() {
         ],
         "classpath": [
             $(cs_fetch --default $(dependencies) | sed 's/\(.*\)/"\1",/g')
-            "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar"
+            "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar"
         ],
         "out": "${abs_script_dir}/.bloop/${module}",
         "classesDir": "${abs_script_dir}/.bloop/${module}/scala-2.12/classes",
@@ -140,11 +146,11 @@ bloop_config_template() {
 
             ],
             "jars": [
-                "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar",
-                "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/${scala_version}/scala-compiler-${scala_version}.jar",
-                "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/jline/jline/2.14.6/jline-2.14.6.jar",
-                "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_2.12/1.0.6/scala-xml_2.12-1.0.6.jar",
-                "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/${scala_version}/scala-reflect-${scala_version}.jar"
+                "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar",
+                "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/${scala_version}/scala-compiler-${scala_version}.jar",
+                "${coursier_cache_dir}/https/repo1.maven.org/maven2/jline/jline/2.14.6/jline-2.14.6.jar",
+                "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_2.12/1.0.6/scala-xml_2.12-1.0.6.jar",
+                "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/${scala_version}/scala-reflect-${scala_version}.jar"
             ],
             "analysis": "${abs_script_dir}/.bloop/${module}/inc_compile_2.12.zip",
             "setup": {
@@ -298,11 +304,13 @@ EOF
     )
 }
 
+die() { >&2 echo "$@"; exit 1; }
+
 run() {
-  install_coursier
-  install_bloop
+  install_coursier          || die "FATAL ERROR: could not install Coursier"
+  install_bloop             || die "FATAL ERROR: could not install Bloop"
   mkdir -p "${bloop_dir}"
-  generate_bloop_config
+  generate_bloop_config     || die "FATAL ERROR: could not generate Bloop configuration"
   unfreeze_bloop
   exec "${bloop_cmd}" run --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
 }
