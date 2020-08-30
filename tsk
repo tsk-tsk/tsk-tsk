@@ -17,7 +17,7 @@ scala_version=2.12.12
 #     org.tpolecat::doobie-core:0.9.0
 #   '
 # }
-dependencies() { echo; }
+dependencies() { true; }
 
 # List of custom artifact repository URLs, which are used in dependency resolution
 # in addition to the well-known public maven repositories.
@@ -67,10 +67,6 @@ cs_fetch() {
     $(repositories | each_to_opt "-r") \
     $(forced_versions | each_to_opt "--force-version") \
     "$@"
-}
-
-resolved_deps() {
-  dependencies | resolve_double_colons
 }
 
 each_to_opt() {
@@ -130,7 +126,7 @@ bloop_config_template() {
         "dependencies": [
         ],
         "classpath": [
-            $(cs_fetch --default $(resolved_deps) | sed 's/\(.*\)/"\1",/g')
+            $(cs_fetch --default $(dependencies) | sed 's/\(.*\)/"\1",/g')
             "${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar"
         ],
         "out": "${abs_script_dir}/.bloop/${module}",
@@ -222,7 +218,7 @@ generate_bloop_config() {
     true
   else
     >&2 echo "generating bloop config"
-    cs_fetch --sources --javadoc --default $(core_deps) $(resolved_deps) --json-output-file "${cs_fetch_result}" > /dev/null
+    cs_fetch --sources --javadoc --default $(core_deps) $(dependencies) --json-output-file "${cs_fetch_result}" > /dev/null
     bloop_config_template > "${bloop_module_config}"
     rm "${cs_fetch_result}"
   fi
