@@ -85,10 +85,17 @@ install_coursier() {
     "Linux")
       case "$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')" in
         "libc.musl")
-          # the assumption: root on alpine in docker
-          # may cause troubles down the road.
-          apk add bash curl zip
-          install_sdkman_and_java
+          # SDKMAN doesn't work on Alpine, need to either have java already
+          # or to have root permissions
+          if ! command -v java
+          then
+            if [ "$(whoami)" = "root" ]
+            then
+              apk update && apk add openjdk11-jdk
+            fi
+          else
+            die "FATAL ERROR: No java present and no root user, which could install it"
+          fi
           cs_url="https://git.io/coursier-cli";;
         "libc.so.6")
           cs_url="https://git.io/coursier-cli-linux";;
