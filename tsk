@@ -7,7 +7,7 @@ set -x
 scala_version=2.12.12
 
 # version of Java Virtual Machine to be used
-sdkman_java_version="8.0.265-open"
+sdkman_java_version="8.0.265.hs-adpt"
 
 # Dependency list specification
 # in format used by Coursier (group::artifact:version or group:artifact_scalaversion:version).
