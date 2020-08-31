@@ -128,6 +128,7 @@ install_coursier() {
           fi
           cs_url="https://git.io/coursier-cli";;
         "libc.so.6")
+          install_sdkman_and_java
           cs_url="https://git.io/coursier-cli-linux";;
       esac;;
     "Darwin")

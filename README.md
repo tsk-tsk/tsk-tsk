@@ -12,7 +12,7 @@ without any up-front setup.
 
 ## Main features
 
-- Zero prerequisites apart of a working internet connection
+- Minimal prerequisites - apart of a working internet connection you need curl, zip and bash
 - The simplest possible workflow: you write the script and you make it executable. That's it.
 The initial script run downloads those of the required dependencies that don't exist on the machine yet.
 - Regular Scala, without any syntax that'd confuse standard tooling (editable without red squiggles in IntelliJ IDEA).
@@ -30,7 +30,8 @@ when
 
 ## Word of caution
 
-This is a very early release, for testing only, not intended for production use yet.
+This is a very early release and there will be rough edges, especially around different versions of Java, Scala
+and of tools used internally (Bloop, Coursier).
 
 ## Example
 
@@ -103,11 +104,10 @@ may occur.
 
 ## Acknowledgements
 
-We all owe our gratitude to the authors and contributors of the following technologies, not mentioned here individually
-because of their large number:
+TSK stands on the shoulders of giants. Kudos to all authors and contributors of the following technologies:
 
 - Scala, which is my favorite programming language
-- Ammonite, which pioneered Scala scripting capabilities
+- Ammonite, the best Scala REPL, which also pioneered Scala scripting capabilities
 - Coursier, which made it super-easy to manage Scala and Java dependencies
 - Bloop, which provides great compilation and IDE interoperation features
 - SDKMAN! which greatly simplified management of Java SDKs
