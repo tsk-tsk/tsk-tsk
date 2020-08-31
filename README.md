@@ -108,6 +108,10 @@ may occur.
 start up quickly, do not only ADD your script on it, but also RUN your script in some no-operation mode
 (for example with `--help` or `--version`, depends on your script).
 This way the dependencies will be installed to the image already during the build and your container will start up fast.
+4. TSK by default assumes that the script's directory (and subdirectories) may contain other source files required by
+the script. For that reason it's better to keep the script files in a separate directory, to avoid any unrelated files
+to be included into the script compilation and causing problems. That's especially important for large directories
+(user home for example). In future there may be a setting that one needs to explicitly enable to detect other sources.
 
 ## Acknowledgements
 
