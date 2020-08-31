@@ -119,7 +119,7 @@ install_sdkman_prerequisites() {
 install_sdkman_and_java() {
   install_sdkman_prerequisites
   curl -s "https://get.sdkman.io?rcupdate=false" | bash
-  bash -c ". ${HOME}/.sdkman/bin/sdkman-init.sh; sdk list java; sdk install java ${sdkman_java_version}"
+  bash -c ". ${HOME}/.sdkman/bin/sdkman-init.sh; sdk list java; yes n | sdk install java ${sdkman_java_version}"
 }
 
 install_coursier() {
