@@ -39,18 +39,17 @@ It demonstrates usage of an some external libraries (sttp and circe):
 
 ```scala
 package app /* 2> /dev/null
-tsk_version=trunk; t="${HOME}/.tsk/tsk-${tsk_version}"
-[ ! -e $t -o "$tsk_version" == "trunk" ] && (u="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/tsk"; mkdir -p $(dirname $t); wget -O $t $u || curl -fLo $t $u)
+tsk_version=trunk; t="${HOME}/.tsk/tsk-${tsk_version}"; tsk_log="${TMPDIR:-"/tmp"}/tsk-$$.log"
+[ ! -e $t -o "$tsk_version" == "trunk" ] && (u="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/tsk"; mkdir -p $(dirname $t); wget -O $t $u || curl -fLo $t $u) >> "${tsk_log}" 2>&1
 . $t
 
 dependencies='
-    com.softwaremill.sttp.client::core:2.2.6
-    com.softwaremill.sttp.client::circe:2.2.6
-    io.circe::circe-generic:0.12.3
+  com.softwaremill.sttp.client::core:2.2.6
+  com.softwaremill.sttp.client::circe:2.2.6
+  io.circe::circe-generic:0.12.3
 '
 
-run "$@"
- */
+run "$@"; cat "${tsk_log}" >&2; exit 1 # */
 
 import sttp.client.quick._
 import sttp.client.circe._
@@ -70,7 +69,11 @@ object Joke extends App {
     .body match {
     case Right(JokeResponse(setup, delivery)) =>
       println(setup)
-      Thread.sleep(3000)
+      Thread.sleep(2000)
+      for (i <- (3 to 1 by -1)) {
+        println(s"${i}...")
+        Thread.sleep(300)
+      }
       println(delivery)
     case Left(_) =>
       println("Sorry, no joke this time")

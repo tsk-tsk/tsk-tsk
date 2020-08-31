@@ -39,8 +39,22 @@ forced_versions=
 # (in other words, you can rely on the default if you name your main class the same as the script file and ensure it has `main` method)
 main_class=
 
+# By default (`false`) TSK will output a log of it's internal operations (to the standard error stream)
+# only when a failure occur. This is to let you be able to pipe outputs of your script to other programs or files
+# without any additional clutter.
+# The TSK log is captured to a file in temporary directory and it's deleted right after display or when all goes well.
+# Sometimes you'll want to see what happens in the real time though, especially when some of the operations take longer
+# than expected, freeze or you want to see what happens exactly.
+#
+# valid values:
+# - false - (default) output log to standard error on TSK failure, don't output anything if all goes well
+# - true - output log to standard error in the real time
+verbose=false
+
 # variables and functions internal to tsk
 # ---------------------------------------
+tsk_log="${TMPDIR:-"/tmp"}/tsk-$$.log"
+
 log() {
   >&2 echo "$@"
 }
@@ -329,7 +343,9 @@ prepare_for_running() {
   install_bloop             || (fatal "could not install Bloop"; return 1)
   mkdir -p "${bloop_dir}"
   generate_bloop_config     || (fatal "could not generate Bloop configuration"; return 1)
-  PATH=${p_with_custom_java} "${bloop_cmd}" compile --config-dir "${script_dir}/.bloop" "${module}"
+  PATH=${p_with_custom_java} "${bloop_cmd}" compile \
+    --config-dir "${script_dir}/.bloop" \
+    "${module}" || (fatal "Error while compiling with Bloop"; return 1)
 }
 
 script_classpath() {
@@ -349,7 +365,26 @@ exec_java() {
   exec java -cp "$(script_classpath)" "$(get_main_class)" "$@"
 }
 
+log_sink() {
+  case "${verbose}" in
+    "false")
+      tee -a "${tsk_log}" > /dev/null;;
+    "true")
+      tee -a "${tsk_log}" /dev/stderr > /dev/null;;
+    *)
+      tee -a "${tsk_log}" /dev/stderr > /dev/null;;
+  esac
+}
+
 run() {
-  prepare_for_running
-  exec_java "$@"
+  set -o pipefail
+  if (prepare_for_running 2>&1 | log_sink)
+  then
+    rm "${tsk_log}"
+    exec_java "$@"
+  else
+    [ "${verbose}" != "true" ] && cat "${tsk_log}" >&2
+    rm "${tsk_log}"
+    exec false
+  fi
 }
