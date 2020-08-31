@@ -12,7 +12,7 @@ without any up-front setup.
 
 ## Main features
 
-- Minimal prerequisites - apart of a working internet connection you only need these common programs: `bash`, `curl`, `unzip`, `which` and `zip`
+- Minimal prerequisites - apart of a working internet connection you only need `wget` or `curl`.
 - The simplest possible workflow: you write the script and you make it executable. That's it.
 The initial script run downloads those of the required dependencies that don't exist on the machine yet.
 - Regular Scala, without any syntax that'd confuse standard tooling (editable without red squiggles in IntelliJ IDEA).
@@ -22,6 +22,7 @@ with all Scala constructs (like packages) working as expected
 
 ## Planned features
 
+- Customizable JVM, Coursier and Bloop versions
 - Repositories that require credentials; internet access via proxy
 - Easy migration to a full-blown Scala project when the script grows.
 The script is valid Scala so the existing tooling handles it perfectly well - the TSK-specific parts are hidden
@@ -116,7 +117,6 @@ TSK stands on the shoulders of giants. Kudos to all authors and contributors of 
 - Ammonite, the best Scala REPL, which also pioneered Scala scripting capabilities
 - Coursier, which made it super-easy to manage Scala and Java dependencies
 - Bloop, which provides great compilation and IDE interoperation features
-- SDKMAN! which greatly simplified management of Java SDKs
 - Unix, with fantastic scripting capabilities
 
 ## Special thanks

@@ -6,9 +6,6 @@
 # version of Scala to be used in compilation and in resolution of libraries
 scala_version=2.12.12
 
-# version of Java Virtual Machine to be used
-sdkman_java_version="8.0.265.hs-adpt"
-
 # Dependency list specification
 # in format used by Coursier (group::artifact:version or group:artifact_scalaversion:version).
 # Needs to output the list to the stdout, one line per dependency.
@@ -77,8 +74,9 @@ abs_script_dir="$(get_abs_script_dir)"
 td=~/.tsk
 bloop_cmd="${td}/bloop"
 cs_cmd="${td}/cs"
-java_bin_dir="${HOME}/.sdkman/candidates/java/${sdkman_java_version}/bin"
-p_with_custom_java="${java_bin_dir}:${PATH}"
+p_with_custom_java() {
+  echo "$( $cs_cmd java-home )/bin:${PATH}"
+}
 download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
 module="$( basename "$0" | sed 's/\.scala//g' )"
 os=$(uname)
@@ -103,25 +101,6 @@ cs_fetch() {
     "$@"
 }
 
-install_sdkman_prerequisites() {
-  if command -v apt
-  then
-    apt update; apt install -y bash curl unzip zip
-  elif command -v yum
-  then
-    yum install -y bash curl unzip which zip
-  elif command -v pacman
-  then
-    yes | pacman -Sy bash curl unzip which zip
-  fi
-}
-
-install_sdkman_and_java() {
-  install_sdkman_prerequisites
-  curl -s "https://get.sdkman.io?rcupdate=false" | bash
-  bash -c ". ${HOME}/.sdkman/bin/sdkman-init.sh; sdk list java; yes n | sdk install java ${sdkman_java_version}"
-}
-
 install_coursier() {
   [ -e "$cs_cmd" ] && return 0;
   log "installing coursier"
@@ -142,15 +121,12 @@ install_coursier() {
           fi
           cs_url="https://git.io/coursier-cli";;
         "libc.so.6")
-          install_sdkman_and_java
           cs_url="https://git.io/coursier-cli-linux";;
       esac;;
     "Darwin")
-      install_sdkman_and_java
       cs_url=https://git.io/coursier-cli-macos;;
     *)
       log "Platform [${os}] is not officially supported (yet?)"
-      install_sdkman_and_java
   esac
   ${download_as} "$cs_cmd" "$cs_url"
   chmod +x "$cs_cmd"
@@ -169,7 +145,7 @@ install_bloop() {
   log "installing bloop"
   # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
   # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
-  PATH=${p_with_custom_java} $cs_cmd bootstrap ch.epfl.scala:bloopgun_2.12:1.4.3-27-dfdc9971 --standalone -o "${bloop_cmd}"
+  PATH="$(p_with_custom_java)" $cs_cmd bootstrap ch.epfl.scala:bloopgun_2.12:1.4.3-27-dfdc9971 --standalone -o "${bloop_cmd}"
 }
 
 build_inputs_sha() {
@@ -358,7 +334,7 @@ prepare_for_running() {
   install_bloop             || (fatal "could not install Bloop"; return 1)
   mkdir -p "${bloop_dir}"
   generate_bloop_config     || (fatal "could not generate Bloop configuration"; return 1)
-  PATH=${p_with_custom_java} "${bloop_cmd}" compile \
+  PATH="$(p_with_custom_java)" "${bloop_cmd}" compile \
     --config-dir "${script_dir}/.bloop" \
     "${module}" || (fatal "Error while compiling with Bloop"; return 1)
 }
@@ -377,7 +353,7 @@ get_main_class() {
 }
 
 exec_java() {
-  exec java -cp "$(script_classpath)" "$(get_main_class)" "$@"
+  PATH="$(p_with_custom_java)" exec java -cp "$(script_classpath)" "$(get_main_class)" "$@"
 }
 
 log_sink() {
