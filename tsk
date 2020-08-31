@@ -113,7 +113,7 @@ install_coursier() {
           then
             if [ "$(whoami)" = "root" ]
             then
-              apk update && apk add openjdk11-jdk
+              apk update && apk add openjdk8-jre
             fi
           else
             fatal "No java present and no root user, which could install it"; return 1
