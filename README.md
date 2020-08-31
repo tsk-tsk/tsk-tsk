@@ -12,7 +12,7 @@ without any up-front setup.
 
 ## Main features
 
-- Minimal prerequisites - apart of a working internet connection you need curl, zip and bash
+- Minimal prerequisites - apart of a working internet connection you only need these common programs: `bash`, `curl`, `unzip`, `which` and `zip`
 - The simplest possible workflow: you write the script and you make it executable. That's it.
 The initial script run downloads those of the required dependencies that don't exist on the machine yet.
 - Regular Scala, without any syntax that'd confuse standard tooling (editable without red squiggles in IntelliJ IDEA).
