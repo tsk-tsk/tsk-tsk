@@ -84,9 +84,11 @@ object Joke extends App {
 
 ## Supported platforms
 
-- Ubuntu as a user
-- Alpine Linux with root privileges (usually not a problem within a Docker container)
-- macOS
+- macOS (tested on AppVeyor, no reports from a fresh macOS system)
+- fresh Docker images of the following Linux distributions:
+  - out of the box: alpine, archlinux, fedora (they've got `curl` / `wget`)
+  - after you install `curl`: debian, ubuntu
+- most likely your Linux distribution even without root permissions as long you've got `bash`, `curl`, `unzip`, `which`, `zip`
 
 ## Things to watch for
 
