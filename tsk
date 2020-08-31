@@ -69,7 +69,7 @@ get_abs_script_dir() {
   pwd -P
 }
 
-script_dir="$(dirname "$0")"
+script_dir="$(dirname "${script_file}")"
 abs_script_dir="$(get_abs_script_dir)"
 td=~/.tsk
 bloop_cmd="${td}/bloop"
