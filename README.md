@@ -89,7 +89,7 @@ object Joke extends App {
 - fresh Docker images of the following Linux distributions:
   - out of the box: alpine, archlinux, fedora (they've got `curl` / `wget`)
   - after you install `curl`: debian, ubuntu
-- most likely your Linux distribution even without root permissions as long you've got `bash`, `curl`, `unzip`, `which`, `zip`
+- most likely your Linux distribution even without root permissions as long you've installed `curl` or `wget`
 
 ## Things to watch for
 
