@@ -210,42 +210,10 @@ bloop_config_template() {
             ]
         },
         "test": {
-            "frameworks": [
-                {
-                    "names": [
-                        "org.scalacheck.ScalaCheckFramework"
-                    ]
-                },
-                {
-                    "names": [
-                        "org.specs2.runner.Specs2Framework",
-                        "org.specs2.runner.SpecsFramework"
-                    ]
-                },
-                {
-                    "names": [
-                        "org.specs.runner.SpecsFramework"
-                    ]
-                },
-                {
-                    "names": [
-                        "org.scalatest.tools.Framework",
-                        "org.scalatest.tools.ScalaTestFramework"
-                    ]
-                },
-                {
-                    "names": [
-                        "com.novocode.junit.JUnitFramework"
-                    ]
-                }
-            ],
+            "frameworks": [ ],
             "options": {
-                "excludes": [
-
-                ],
-                "arguments": [
-
-                ]
+                "excludes": [ ],
+                "arguments": [ ]
             }
         },
         "resolution": {
