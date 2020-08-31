@@ -101,6 +101,10 @@ to the next line. What Scala interprets as a beginning of a comment block (`/*`)
 (the typical case) then it's fine, but if it happens, that the root directory contains a program that would appear at
 the beginning of the `/*` expansion, like `/aaa-do-not-run /bin /dev /etc /home ...`, then some undesired side-effects
 may occur.
+3. TSK installing all dependencies takes time on a fresh system, so if you are preparing a Docker image that needs to
+start up quickly, do not only ADD your script on it, but also RUN your script in some no-operation mode
+(for example with `--help` or `--version`, depends on your script).
+This way the dependencies will be installed to the image already during the build and your container will start up fast.
 
 ## Acknowledgements
 
