@@ -302,6 +302,9 @@ prepare_for_running() {
   install_bloop             || (fatal "could not install Bloop"; return 1)
   mkdir -p "${bloop_dir}"
   generate_bloop_config     || (fatal "could not generate Bloop configuration"; return 1)
+  PATH="$(p_with_custom_java)" log "Using following path for java: $(command -v java)"
+  log "Coursier's java is: $( $cs_cmd java-home --jvm 8 )"
+  $cs_cmd java --available
   PATH="$(p_with_custom_java)" "${bloop_cmd}" compile \
     --config-dir "${script_dir}/.bloop" \
     "${module}" || (fatal "Error while compiling with Bloop"; return 1)
