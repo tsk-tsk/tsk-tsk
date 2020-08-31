@@ -103,7 +103,21 @@ cs_fetch() {
     "$@"
 }
 
+install_sdkman_prerequisites() {
+  if command -v apt
+  then
+    apt update; apt install -y bash curl unzip zip
+  elif command -v yum
+  then
+    yum install -y bash curl unzip which zip
+  elif command -v pacman
+  then
+    yes | pacman -Sy bash curl unzip which zip
+  fi
+}
+
 install_sdkman_and_java() {
+  install_sdkman_prerequisites
   curl -s "https://get.sdkman.io?rcupdate=false" | bash
   bash -c ". ${HOME}/.sdkman/bin/sdkman-init.sh; sdk list java; sdk install java ${sdkman_java_version}"
 }
