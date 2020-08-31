@@ -75,7 +75,7 @@ td=~/.tsk
 bloop_cmd="${td}/bloop"
 cs_cmd="${td}/cs"
 p_with_custom_java() {
-  echo "$( $cs_cmd java-home )/bin:${PATH}"
+  echo "$( $cs_cmd java-home --jvm 8 )/bin:${PATH}"
 }
 download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
 module="$( basename "$0" | sed 's/\.scala//g' )"
