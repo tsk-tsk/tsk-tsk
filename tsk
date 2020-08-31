@@ -14,27 +14,25 @@ sdkman_java_version="8.0.265.hs-adpt"
 # Needs to output the list to the stdout, one line per dependency.
 # Example:
 #
-# dependencies() {
-#   echo '
+# dependencies='
 #     com.typesafe.play::play-json:2.8.2
 #     org.tpolecat::doobie-core:0.9.0
-#   '
-# }
-dependencies() { true; }
+# '
+dependencies=
 
 # List of custom artifact repository URLs, which are used in dependency resolution
 # in addition to the well-known public maven repositories.
 # Needs to output the list to the stdout, one line per repository URL
 # (the values listed here are passed to `-r` option of Coursier),
 # for more information see: https://get-coursier.io/docs/other-repositories
-repositories() { true; }
+repositories=
 
 # List of artifacts in explicitly stated versions that are to be used
 # instead of the results of the automatic dependency resolution process.
 # Commonly used when you depend on an older version of a library and the newer version is not backward compatible.
 # Needs to output the list to the stdout, one line per artifact (in format group::artifact:version as
 # the values are passed to the `--force-version` option of Coursier).
-forced_versions() { true; }
+forced_versions=
 
 # Name of the main class (script entrypoint).
 # If not given it's assumed to be `package.name.used.in.the.first.package.statement.ScriptFileNameWithoutScalaExtension`
@@ -76,23 +74,19 @@ bloop_dir="${script_dir}/.bloop"
 bloop_module_config="${bloop_dir}/${module}.json"
 cs_fetch_result="${bloop_dir}/cs_fetch_result.json"
 
-core_deps() {
-  echo "
+core_deps="
     org.scala-lang:scala-compiler:${scala_version}
     jline:jline:2.14.6
-  "
-}
+"
 
 cs_fetch() {
+  # shellcheck disable=SC2046
+  # (the whole point is to make shell split the repositories and forced versions by words here)
   "$cs_cmd" fetch -q \
     --scala-version "${scala_version}" \
-    $(repositories | each_to_opt "-r") \
-    $(forced_versions | each_to_opt "--force-version") \
+    $(for repo in ${repositories}; do echo "-r ${repo}"; done) \
+    $(for ver in ${forced_versions}; do echo "--force-version ${ver}"; done) \
     "$@"
-}
-
-each_to_opt() {
-  sed "s/\(.*\)/${1} \1/g"
 }
 
 install_sdkman_and_java() {
@@ -151,8 +145,9 @@ install_bloop() {
 
 build_inputs_sha() {
   (
-    repositories
-    dependencies
+    echo "${repositories}"
+    echo "${dependencies}"
+    echo "${forced_versions}"
     echo "${scala_version}"
     echo "${HOME}"
     echo "${abs_script_dir}"
@@ -174,7 +169,7 @@ bloop_config_template() {
         "dependencies": [
         ],
         "classpath": [
-            $(cs_fetch --default $(dependencies) | sed 's/\(.*\)/"\1",/g')
+            $(cs_fetch --default ${dependencies} | sed 's/\(.*\)/"\1",/g')
             "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar"
         ],
         "out": "${abs_script_dir}/.bloop/${module}",
@@ -266,7 +261,9 @@ generate_bloop_config() {
     true
   else
     log "generating bloop config"
-    cs_fetch --sources --javadoc --default $(core_deps) $(dependencies) --json-output-file "${cs_fetch_result}" > /dev/null
+    # shellcheck disable=SC2086
+    # (all dependencies need to be passed space-separated so shell word splitting is fine here)
+    cs_fetch --sources --javadoc --default ${core_deps} ${dependencies} --json-output-file "${cs_fetch_result}" > /dev/null
     bloop_config_template > "${bloop_module_config}"
     rm "${cs_fetch_result}"
   fi
@@ -327,23 +324,6 @@ EOF
     )
 }
 
-# some debugging
-log script dir is $script_dir
-log abs_script_dir is $abs_script_dir
-log td is $td
-log bloop_cmd is $bloop_cmd
-log cs_cmd is $cs_cmd
-log java_bin_dir is $java_bin_dir
-log p_with_custom_java is $p_with_custom_java
-log download_as is $download_as
-log module is $module
-log os is $os
-
-# bloop and coursier internals
-log bloop_dir is $bloop_dir
-log bloop_module_config is $bloop_module_config
-log cs_fetch_result is $cs_fetch_result
-
 prepare_for_running() {
   install_coursier          || (fatal "could not install Coursier"; return 1)
   install_bloop             || (fatal "could not install Bloop"; return 1)
@@ -353,7 +333,7 @@ prepare_for_running() {
 }
 
 script_classpath() {
-  echo "$(cs_fetch -p --default $(dependencies)):${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
+  echo "$(cs_fetch -p --default ${dependencies}):${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
 }
 
 get_main_class() {

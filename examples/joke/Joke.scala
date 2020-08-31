@@ -3,13 +3,11 @@ tsk_version=trunk; t="${HOME}/.tsk/tsk-${tsk_version}"
 [ ! -e $t -o "$tsk_version" == "trunk" ] && (u="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/tsk"; mkdir -p $(dirname $t); wget -O $t $u || curl -fLo $t $u)
 . $t
 
-dependencies() {
-  echo '
+dependencies='
     com.softwaremill.sttp.client::core:2.2.6
     com.softwaremill.sttp.client::circe:2.2.6
     io.circe::circe-generic:0.12.3
-  '
-}
+'
 
 run "$@"
  */
