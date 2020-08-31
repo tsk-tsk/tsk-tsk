@@ -36,10 +36,32 @@ repositories() { true; }
 # the values are passed to the `--force-version` option of Coursier).
 forced_versions() { true; }
 
+# Name of the main class (script entrypoint).
+# If not given it's assumed to be `package.name.used.in.the.first.package.statement.ScriptFileNameWithoutScalaExtension`
+# (in other words, you can rely on the default if you name your main class the same as the script file and ensure it has `main` method)
+main_class=
+
 # variables and functions internal to tsk
 # ---------------------------------------
+log() {
+  >&2 echo "$@"
+}
+
+fatal() {
+  log "FATAL ERROR: $*"
+}
+
+script_file="$([ $# -ne 0 ] && echo "${1}" || echo "${0}")"
+(echo "${script_file}" | grep -q scala && [ -e "${script_file}" ] ) || (fatal \
+  "tsk must be sourced either 1) from within a *.scala file or 2) with a *.scala file argument (~/.tsk/tsk-x.y.z Foo.scala)"; return 1)
+
+get_abs_script_dir() {
+  cd "${script_dir}" || (fatal "Can't cd to the script directory, symbolic links not supported (yet?)"; return 1)
+  pwd -P
+}
+
 script_dir="$(dirname "$0")"
-abs_script_dir="$(cd "${script_dir}" || die "FATAL ERROR: Can't cd to the script directory, symbolic links not supported (yet?)"; pwd -P)"
+abs_script_dir="$(get_abs_script_dir)"
 td=~/.tsk
 bloop_cmd="${td}/bloop"
 cs_cmd="${td}/cs"
@@ -94,7 +116,7 @@ install_coursier() {
               apk update && apk add openjdk11-jdk
             fi
           else
-            die "FATAL ERROR: No java present and no root user, which could install it"
+            fatal "No java present and no root user, which could install it"; return 1
           fi
           cs_url="https://git.io/coursier-cli";;
         "libc.so.6")
@@ -124,8 +146,7 @@ install_bloop() {
   log "installing bloop"
   # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
   # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
-  local PATH=${p_with_custom_java}
-  $cs_cmd bootstrap ch.epfl.scala:bloopgun_2.12:1.4.3-27-dfdc9971 --standalone -o "${bloop_cmd}"
+  PATH=${p_with_custom_java} $cs_cmd bootstrap ch.epfl.scala:bloopgun_2.12:1.4.3-27-dfdc9971 --standalone -o "${bloop_cmd}"
 }
 
 build_inputs_sha() {
@@ -251,25 +272,6 @@ generate_bloop_config() {
   fi
 }
 
-# TODO make this and unfreeze unnecessary by only using bloop for compilation
-kill_build_server() {
-  log "killing build server"
-  # TODO that'll work on Alpine only
-  kill $( /usr/lib/jvm/java-11-openjdk/bin/jps | awk '/Server/ {print $1}' )
-}
-
-unfreeze_bloop() {
-  timeout=1s
-  ( PATH="${p_with_custom_java}" "${bloop_cmd}" about & ( sleep 1; echo "timeout" ) ) | (
-    head -n 1 | read status
-    if [ "$status" = "timeout" ]
-    then
-      log "no response from build server in ${timeout}"
-      kill_build_server
-    fi
-  )
-}
-
 cs_report_0_1_0_to_bloop_resolution_modules() {
 
   sed 's/"file":"/\nFILE /g
@@ -325,12 +327,6 @@ EOF
     )
 }
 
-die() { log "$@"; exit 1; }
-
-log() {
-  >&2 echo "$@"
-}
-
 # some debugging
 log script dir is $script_dir
 log abs_script_dir is $abs_script_dir
@@ -348,13 +344,32 @@ log bloop_dir is $bloop_dir
 log bloop_module_config is $bloop_module_config
 log cs_fetch_result is $cs_fetch_result
 
+prepare_for_running() {
+  install_coursier          || (fatal "could not install Coursier"; return 1)
+  install_bloop             || (fatal "could not install Bloop"; return 1)
+  mkdir -p "${bloop_dir}"
+  generate_bloop_config     || (fatal "could not generate Bloop configuration"; return 1)
+  PATH=${p_with_custom_java} "${bloop_cmd}" compile --config-dir "${script_dir}/.bloop" "${module}"
+}
+
+script_classpath() {
+  echo "$(cs_fetch -p --default $(dependencies)):${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
+}
+
+get_main_class() {
+  if [ -z "${main_class}" ]
+  then
+    echo "$(awk '/^package/ { print $2 }' "${script_file}" | head -n 1).${module}"
+  else
+    echo "${main_class}"
+  fi
+}
+
+exec_java() {
+  exec java -cp "$(script_classpath)" "$(get_main_class)" "$@"
+}
 
 run() {
-  install_coursier          || die "FATAL ERROR: could not install Coursier"
-  install_bloop             || die "FATAL ERROR: could not install Bloop"
-  mkdir -p "${bloop_dir}"
-  generate_bloop_config     || die "FATAL ERROR: could not generate Bloop configuration"
-  unfreeze_bloop
-  local PATH=${p_with_custom_java}
-  exec "${bloop_cmd}" run --verbose --config-dir "${script_dir}/.bloop" "${module}" -- "$@"
+  prepare_for_running
+  exec_java "$@"
 }
