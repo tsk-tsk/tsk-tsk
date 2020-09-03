@@ -108,16 +108,16 @@ install_coursier() {
     "Linux")
       case "$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')" in
         "libc.musl")
-          # SDKMAN doesn't work on Alpine, need to either have java already
+          # Coursier isn't compiled against libc.musl yet (Alpine uses it), need to either have java already
           # or to have root permissions
           if ! command -v java
           then
             if [ "$(whoami)" = "root" ]
             then
               apk update && apk add openjdk8-jre
+            else
+              fatal "No java present and no root user, which could install it"; return 1
             fi
-          else
-            fatal "No java present and no root user, which could install it"; return 1
           fi
           cs_url="https://git.io/coursier-cli";;
         "libc.so.6")
