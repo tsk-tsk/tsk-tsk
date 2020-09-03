@@ -88,6 +88,9 @@ cs_fetch_result="${bloop_dir}/cs_fetch_result.json"
 
 core_deps="
     org.scala-lang:scala-compiler:${scala_version}
+    org.scala-lang:scala-library:${scala_version}
+    org.scala-lang:scala-reflect:${scala_version}
+
     jline:jline:2.14.6
 "
 
