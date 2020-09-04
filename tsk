@@ -74,6 +74,14 @@ abs_script_dir="$(get_abs_script_dir)"
 td=~/.tsk
 bloop_cmd="${td}/bloop"
 cs_cmd="${td}/cs"
+get_sha_sum() {
+  if command -v sha256sum > /dev/null 2>&1
+  then
+    sha256sum
+  else
+    shasum -a 256
+  fi
+}
 p_with_custom_java() {
   echo "$( $cs_cmd java-home --jvm 8 )/bin:${PATH}"
 }
@@ -133,10 +141,6 @@ install_coursier() {
   esac
   ${download_as} "$cs_cmd" "$cs_url"
   chmod +x "$cs_cmd"
-  if [ "${os}" = "Darwin" ]
-  then
-    (command -v xattr && xattr -d com.apple.quarantine "$cs_cmd") || true
-  fi
 }
 
 coursier_cache_dir_on_Linux="${HOME}/.cache/coursier/v1"
@@ -159,7 +163,7 @@ build_inputs_sha() {
     echo "${scala_version}"
     echo "${HOME}"
     echo "${abs_script_dir}"
-  ) | sha256sum | tr -d ' -'
+  ) | get_sha_sum | tr -d ' -'
 }
 
 bloop_config_template() {
