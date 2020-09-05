@@ -257,6 +257,7 @@ generate_bloop_config() {
     # good, config can stay
     true
   else
+    fetch_all_dependencies
     log "generating bloop config"
     bloop_config_template > "${bloop_module_config}"
   fi

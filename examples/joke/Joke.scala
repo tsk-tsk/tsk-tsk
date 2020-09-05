@@ -1,5 +1,5 @@
 package app /* 2> /dev/null
-tsk_version=0.0.9; t="${HOME}/.tsk/tsk-${tsk_version}"; tsk_log="${TMPDIR:-"/tmp"}/tsk-$$.log"
+tsk_version=0.0.10; t="${HOME}/.tsk/tsk-${tsk_version}"; tsk_log="${TMPDIR:-"/tmp"}/tsk-$$.log"
 [ ! -e $t -o "$tsk_version" == "trunk" ] && (u="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/tsk"; mkdir -p $(dirname $t); wget -O $t $u || curl -fLo $t $u) >> "${tsk_log}" 2>&1
 . $t
 
