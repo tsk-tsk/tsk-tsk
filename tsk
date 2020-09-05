@@ -60,9 +60,19 @@ fatal() {
   log "FATAL ERROR: $*"
 }
 
+# The alternative way of sourcing the TSK (~/.tsk/tsk-x.y.z Foo.scala)
+# mainly serves debugging purposes as you are able to check output of the individual functions
 script_file="$([ $# -ne 0 ] && echo "${1}" || echo "${0}")"
 (echo "${script_file}" | grep -q scala && [ -e "${script_file}" ] ) || (fatal \
   "tsk must be sourced either 1) from within a *.scala file or 2) with a *.scala file argument (~/.tsk/tsk-x.y.z Foo.scala)"; return 1)
+if [ $# -ne 0 ]
+then
+  tsk_user_settings="${TMPDIR:-"/tmp"}/tsk-$$.settings"
+  sed -n '/\. /,/exit 1/ p' "${script_file}" | tail -n +2 | head -n -1 > "${tsk_user_settings}"
+  # shellcheck disable=SC1090
+  . "${tsk_user_settings}"
+  rm "${tsk_user_settings}"
+fi
 
 get_abs_script_dir() {
   cd "${script_dir}" || (fatal "Can't cd to the script directory, symbolic links not supported (yet?)"; return 1)
@@ -86,13 +96,13 @@ p_with_custom_java() {
   echo "$( $cs_cmd java-home --jvm 8 )/bin:${PATH}"
 }
 download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
-module="$( basename "$0" | sed 's/\.scala//g' )"
+module="$( basename "${script_file}" | sed 's/\.scala//g' )"
 os=$(uname)
 
 # bloop and coursier internals
 bloop_dir="${script_dir}/.bloop"
 bloop_module_config="${bloop_dir}/${module}.json"
-cs_fetch_result="${bloop_dir}/cs_fetch_result.json"
+cs_fetch_result="${bloop_dir}/${module}.cs_fetch.result"
 
 core_deps="
     org.scala-lang:scala-compiler:${scala_version}
@@ -234,6 +244,13 @@ bloop_config_template() {
 EOF
 }
 
+fetch_all_dependencies() {
+    log "fetching all dependencies"
+    # shellcheck disable=SC2086
+    # (all dependencies need to be passed space-separated so shell word splitting is fine here)
+    cs_fetch --sources --javadoc --default ${core_deps} ${dependencies} --json-output-file "${cs_fetch_result}" > /dev/null
+}
+
 generate_bloop_config() {
   if grep -q "tsk_build_inputs_sha.*$(build_inputs_sha)" "${bloop_module_config}" 2>/dev/null
   then
@@ -241,36 +258,51 @@ generate_bloop_config() {
     true
   else
     log "generating bloop config"
-    # shellcheck disable=SC2086
-    # (all dependencies need to be passed space-separated so shell word splitting is fine here)
-    cs_fetch --sources --javadoc --default ${core_deps} ${dependencies} --json-output-file "${cs_fetch_result}" > /dev/null
     bloop_config_template > "${bloop_module_config}"
-    rm "${cs_fetch_result}"
   fi
 }
 
-cs_report_0_1_0_to_bloop_resolution_modules() {
-
-  sed 's/"file":"/\nFILE /g
+unjsonize_cs_report() {
+  sed 's/"file":"\?/\nFILE /g
        s/"coord":"/\nCOORD /g
-       s/"/\n/g' | \
-    grep -e FILE -e COORD | \
-    sed 's/FILE //g
-         s/COORD //g' | \
-    awk -F: '{
-      group=$1
-      artifact=$2
-      version=$3
+       s/,/\n/g
+       s/"/\n/g'
+}
 
-      getline
-      path=$1
+just_file_and_coords() {
+  grep -e FILE -e COORD
+}
+
+strip_file_and_coords_markers() {
+    sed 's/FILE //g
+         s/COORD //g'
+}
+
+artifact_info_as_tsv() {
+  awk -F: '{
+    group=$1
+    artifact=$2
+    version=$3
+
+    getline
+    path=$1
+
+    if (path != "null") {
       gsub(/.jar$/, "", path)
 
       jar_path=(path ".jar")
       javadoc_path=(path "-javadoc.jar")
       sources_path=(path "-sources.jar")
       print(group, artifact, version, jar_path, javadoc_path, sources_path)
-    }' | (
+    }
+  }'
+}
+
+cs_report_0_1_0_to_bloop_resolution_modules() {
+  unjsonize_cs_report | \
+    just_file_and_coords | \
+    strip_file_and_coords_markers | \
+    artifact_info_as_tsv | (
     after_first="false"
     while read -r group artifact version jar_path javadoc_path sources_path
     do
