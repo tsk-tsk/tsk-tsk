@@ -62,10 +62,10 @@ fatal() {
 
 # The alternative way of sourcing the TSK (~/.tsk/tsk-x.y.z Foo.scala)
 # mainly serves debugging purposes as you are able to check output of the individual functions
-script_file="$([ $# -ne 0 ] && echo "${1}" || echo "${0}")"
-(echo "${script_file}" | grep -q scala && [ -e "${script_file}" ] ) || (fatal \
+script_file="$(echo "$0" | grep -q '\.scala$' && echo "${0}" || echo "${1}")"
+[ -e "${script_file}" ] || (fatal \
   "tsk must be sourced either 1) from within a *.scala file or 2) with a *.scala file argument (~/.tsk/tsk-x.y.z Foo.scala)"; return 1)
-if [ $# -ne 0 ]
+if echo "$0" | grep -vq '\.scala$'
 then
   tsk_user_settings="${TMPDIR:-"/tmp"}/tsk-$$.settings"
   sed -n '/\. /,/exit 1/ p' "${script_file}" | tail -n +2 | head -n -1 > "${tsk_user_settings}"
