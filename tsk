@@ -31,6 +31,9 @@ repositories=
 # the values are passed to the `--force-version` option of Coursier).
 forced_versions=
 
+# List of exclusions (Coursier's option: --exclude | -E  <organization:name>)
+exclusions=
+
 # Name of the main class (script entrypoint).
 # If not given it's assumed to be `package.name.used.in.the.first.package.statement.ScriptFileNameWithoutScalaExtension`
 # (in other words, you can rely on the default if you name your main class the same as the script file and ensure it has `main` method)
@@ -119,6 +122,7 @@ cs_fetch() {
     --scala-version "${scala_version}" \
     $(for repo in ${repositories}; do echo "-r ${repo}"; done) \
     $(for ver in ${forced_versions}; do echo "--force-version ${ver}"; done) \
+    $(for org_artifact in ${exclusions}; do echo "--exclude ${org_artifact}"; done) \
     "$@"
 }
 
@@ -170,6 +174,7 @@ build_inputs_sha() {
     echo "${repositories}"
     echo "${dependencies}"
     echo "${forced_versions}"
+    echo "${exclusions}"
     echo "${scala_version}"
     echo "${HOME}"
     echo "${abs_script_dir}"
