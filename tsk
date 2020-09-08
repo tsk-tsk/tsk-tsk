@@ -368,7 +368,9 @@ get_main_class() {
 }
 
 exec_java() {
-  PATH="$(p_with_custom_java)" exec java -cp "$(script_classpath)" "$(get_main_class)" "$@"
+  # shellcheck disable=SC2086
+  # JAVA_OPTS can be multiple -D things, we want to pass all separately
+  PATH="$(p_with_custom_java)" exec java -cp "$(script_classpath)" ${JAVA_OPTS} "$(get_main_class)" "$@"
 }
 
 log_sink() {
