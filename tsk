@@ -355,7 +355,7 @@ prepare_for_running() {
 }
 
 script_classpath() {
-  echo "$(cs_fetch -p --default ${dependencies}):${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
+  echo "$(cs_fetch --default ${dependencies} | sort -ds | awk '{printf("%s:", $0)}')${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
 }
 
 get_main_class() {
