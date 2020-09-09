@@ -1,0 +1,17 @@
+name: Vanity URLs for all tagged versions
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  vanity:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Runs a single command using the runners shell
+      - name: Request a vanity URL for the main TSK script
+        run: echo curl -i https://git.io -F "url=https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${{ github.event.release.tag_name }}/tsk" -F "code=${{ github.event.release.tag_name }}"
