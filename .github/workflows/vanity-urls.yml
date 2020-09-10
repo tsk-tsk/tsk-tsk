@@ -14,4 +14,4 @@ jobs:
     steps:
       # Runs a single command using the runners shell
       - name: Request a vanity URL for the main TSK script
-        run: echo curl -i https://git.io -F "url=https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${{ github.event.release.tag_name }}/tsk" -F "code=${{ github.event.release.tag_name }}"
+        run: echo "${{ github.ref }}" | sed 's|refs/tags/||' | ( read version; curl -i https://git.io -F "url=https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${version}/tsk" -F "code=${version}" )
