@@ -1,0 +1,66 @@
+# This boot-tsk script ensures that the proper version of the main TSK file is present (`v` or `tsk_version` variable)
+# and depending on its success outputs either:
+# 1) the tsk file name
+# 2) a path to a (dynamically generated) one-off error-reporting script,
+# the only purpose of which is to describe what went wrong and exit with error code (1).
+#
+# In both cases it should be safe to call the script from an external program the following way:
+# source $( curl boot-tsk-url | sh )
+#
+# so in the successful case the TSK will be sourced (and its definitions will come into the current scope)
+# and in the case of error the failure will be reported nicely and program will exit
+# (note that if you want to call it from an interactive shell you need to use a subshell (wrap it with parens):
+# ( source $( curl boot-tsk-url | sh ) ), because on error it would end your shell session ).
+#
+# The TSK versions present on disk are left alone unless the version is trunk (meaning "latest"),
+# in which case this script tries to download the most recent version of itself and of TSK.
+tsk_version="${v:-${tsk_version:-trunk}}"
+tsk_log="${TMPDIR:-"/tmp"}/tsk-$$.log"
+tsk_home_dir="${HOME}/.tsk"
+main_tsk_file="${tsk_home_dir}/tsk-${tsk_version}"
+main_tsk_url="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/tsk"
+boot_tsk_file="${tsk_home_dir}/boot-tsk-${tsk_version}"
+boot_tsk_url="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/boot-tsk"
+
+download_as() {
+  download_failed="Failed to download a necessary file."
+  advice="Please ensure the version '${tsk_version}' is valid, the URL is correct and that internet connection (DNS, proxy) works."
+  if command -v curl > /dev/null
+  then
+    curl -fLo "$@" >> "${tsk_log}" || fatal_error "
+${download_failed}
+The command used: 'curl -fLo $*'.
+${advice}"
+  elif command -v wget > /dev/null
+  then
+    wget -O "$@" >> "${tsk_log}" || fatal_error "
+${download_failed}
+The command used: 'wget -O $*'.
+${advice}"
+  else
+    fatal_error "Unable to download required files without curl or wget installed. Please install either of them first."
+  fi
+}
+
+fatal_error() {
+  path_to_error_notifier_program="${TEMP:-/tmp}/tsk-report-error-for-pid-$$"
+  cat > "${path_to_error_notifier_program}" << EOF
+>&2 echo "$@"
+>&2 [ -e "${tsk_log}" ] && [ "$( <"${tsk_log}" wc -w )" != "0" ] && {
+  >&2 echo "Futher information from the logs:"
+  cat "${tsk_log}"
+}
+rm "${path_to_error_notifier_program}" 2> /dev/null
+rm "${tsk_log}" 2> /dev/null
+exit 1
+EOF
+  echo "${path_to_error_notifier_program}"
+  return 1
+}
+
+set -e
+mkdir -p "${tsk_home_dir}" || fatal_error "Directory '${tsk_home_dir}' is required by script to be run.
+Make sure you have sufficient access rights and that no file with this name exists already."
+{ [ ! -e "${boot_tsk_file}" ] || [ "${tsk_version}" == "trunk" ]; } && { download_as "${boot_tsk_file}" "${boot_tsk_url}"; }
+{ [ ! -e "${main_tsk_file}" ] || [ "${tsk_version}" == "trunk" ]; } && { download_as "${main_tsk_file}" "${main_tsk_url}"; }
+echo "${main_tsk_file}"
