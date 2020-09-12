@@ -63,6 +63,7 @@ fatal() {
   log "FATAL ERROR: $*"
 }
 
+script_args="$@"
 # The alternative way of sourcing the TSK (~/.tsk/tsk-x.y.z Foo.scala)
 # mainly serves debugging purposes as you are able to check output of the individual functions
 script_file="$(echo "$0" | grep -q '\.scala$' && echo "${0}" || echo "${1}")"
@@ -387,10 +388,29 @@ run() {
   if (prepare_for_running 2>&1 | log_sink)
   then
     rm "${tsk_log}"
-    exec_java "$@"
+    eval "$(printf "%s" "exec_java $(
+      seq "${argc}" | awk '{printf "\"$arg_" $1 "\" "}'
+    )")"
   else
     [ "${verbose}" != "true" ] && cat "${tsk_log}" >&2
     rm "${tsk_log}"
     exec false
   fi
 }
+
+test_fork() {
+  echo testing
+}
+
+# Working around ash (Alpine) lack of arrays, to let use simply write `run`
+# capturing the parameters in order to use it in exec_java
+i=1
+argc="$#"
+# arg is used within eval
+# shellcheck disable=SC2034
+for arg in "$@"
+do
+  eval "arg_$i=\"\${arg}\""
+  i=$(( i + 1 ))
+done
+unset i

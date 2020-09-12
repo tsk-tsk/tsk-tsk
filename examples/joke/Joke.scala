@@ -9,7 +9,7 @@ dependencies='
   io.circe::circe-generic:0.12.3
 '
 
-run "$@"; cat "${tsk_log}" >&2; exit 1 # */
+run; cat "${tsk_log}" >&2; exit 1 # */
 
 import sttp.client.quick._
 import sttp.client.circe._
