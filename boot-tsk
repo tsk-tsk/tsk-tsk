@@ -27,7 +27,7 @@ download_as() {
   advice="Please ensure the version '${tsk_version}' is valid, the URL is correct and that internet connection (DNS, proxy) works."
   if command -v curl > /dev/null
   then
-    curl --no-progress-meter -fLo "$@" >> "${tsk_log}" || fatal_error "
+    curl -fLo "$@" >> "${tsk_log}" || fatal_error "
 ${download_failed}
 The command used: 'curl -fLo $*'.
 ${advice}"
