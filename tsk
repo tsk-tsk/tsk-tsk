@@ -359,7 +359,7 @@ script_classpath() {
 get_main_class() {
   if [ -z "${main_class}" ]
   then
-    echo "$(awk '/^package/ { print $2 }' "${script_file}" | head -n 1).${module}"
+    echo "$(awk '/^package/ { print $2 "." }' "${script_file}" | head -n 1)${module}"
   else
     echo "${main_class}"
   fi
@@ -368,7 +368,7 @@ get_main_class() {
 exec_java() {
   # shellcheck disable=SC2086
   # JAVA_OPTS can be multiple -D things, we want to pass all separately
-  PATH="$(p_with_custom_java)" exec java -cp "$(script_classpath)" ${JAVA_OPTS} "$(get_main_class)" "$@"
+  PATH="$(p_with_custom_java)" exec java -cp "$(script_classpath)" ${JAVA_OPTS:-} "$(get_main_class)" "$@"
 }
 
 log_sink() {
