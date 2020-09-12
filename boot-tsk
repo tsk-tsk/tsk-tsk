@@ -61,6 +61,6 @@ EOF
 set -e
 mkdir -p "${tsk_home_dir}" || fatal_error "Directory '${tsk_home_dir}' is required by script to be run.
 Make sure you have sufficient access rights and that no file with this name exists already."
-{ [ ! -e "${boot_tsk_file}" ] || [ "${tsk_version}" == "trunk" ]; } && { download_as "${boot_tsk_file}" "${boot_tsk_url}"; }
-{ [ ! -e "${main_tsk_file}" ] || [ "${tsk_version}" == "trunk" ]; } && { download_as "${main_tsk_file}" "${main_tsk_url}"; }
+{ [ ! -e "${boot_tsk_file}" ] || [ "${tsk_version}" = "trunk" ]; } && { download_as "${boot_tsk_file}" "${boot_tsk_url}"; }
+{ [ ! -e "${main_tsk_file}" ] || [ "${tsk_version}" = "trunk" ]; } && { download_as "${main_tsk_file}" "${main_tsk_url}"; }
 echo "${main_tsk_file}"
