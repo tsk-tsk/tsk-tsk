@@ -63,7 +63,6 @@ fatal() {
   log "FATAL ERROR: $*"
 }
 
-script_args="$@"
 # The alternative way of sourcing the TSK (~/.tsk/tsk-x.y.z Foo.scala)
 # mainly serves debugging purposes as you are able to check output of the individual functions
 script_file="$(echo "$0" | grep -q '\.scala$' && echo "${0}" || echo "${1}")"
@@ -108,9 +107,10 @@ bloop_dir="${script_dir}/.bloop"
 bloop_module_config="${bloop_dir}/${module}.json"
 cs_fetch_result="${bloop_dir}/${module}.cs_fetch.result"
 
+scala_library="org.scala-lang:scala-library:${scala_version}"
 core_deps="
     org.scala-lang:scala-compiler:${scala_version}
-    org.scala-lang:scala-library:${scala_version}
+    ${scala_library}
     org.scala-lang:scala-reflect:${scala_version}
 
     jline:jline:2.14.6
@@ -354,7 +354,8 @@ prepare_for_running() {
 }
 
 script_classpath() {
-  echo "$(cs_fetch --default ${dependencies} | sort -ds | awk '{printf("%s:", $0)}')${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
+  echo "$(cs_fetch --default "${scala_library}" ${dependencies} | sort -ds | awk '{printf("%s:", $0)}'
+         )${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
 }
 
 get_main_class() {
