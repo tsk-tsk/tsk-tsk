@@ -100,6 +100,27 @@ so the shell won't see (and won't be confused) the Scala source code.
 
 ## Variable reference
 
+All variables defined after sourcing TSK and before the `run` function invocation will override the defaults.
+Whenever a variable is described as a list, then it's a string with whitespace (and/or newline) separated elements, for
+example you may declare script dependencies either as `dependencies='foo::bar:1.0.0 baz::quix:0.3.1'` or as:
+```shell
+dependencies='
+  foo::bar:1.0.0
+  baz::quix:0.3.1
+'
+```
+equivalently. You can also take advantage of the fact, that everything up to (and including) the `run` invocation is
+shell script, so without the double-quotes things are evaluated according to shell rules. Say you've got a library with
+multiple components, sharing a single version. You may define it as a separate variable and refer to it within another
+expression:
+```shell
+sttp_version=2.2.6
+dependencies="
+  com.softwaremill.sttp.client::core:$sttp_version
+  com.softwaremill.sttp.client::circe:$sttp_version
+  io.circe::circe-generic:0.12.3"
+```
+
 Variable | Default |Description
 ---------|---------|-----------
 `scala_version` | 2.12.12 | version of Scala to be used in compilation and in resolution of libraries (in order to translate `group::artifact:version` to `group:artifact_scalamajordotminorversion:version`)
@@ -107,9 +128,11 @@ Variable | Default |Description
 `repositories` | | list of custom artifact repository URLs, which are used in dependency resolution for artifacts that can't be found in the [well-known](https://get-coursier.io/docs/other-repositories) public maven repositories (which are being used always by default). A whitespace (including newline) separated list of URLs. The values listed here are passed to `-r` option of Coursier ([see here for more information](https://get-coursier.io/docs/other-repositories))
 `forced_versions` | | list of artifacts in explicitly stated versions that are to be used instead of the results of the automatic dependency resolution process. Commonly used when you depend on an older version of a library and the newer version is not backward compatible but some of the other dependencies pulls it in transitively. In `group::artifact:version` format (list separated by whitespace, including newlines) as the values are passed to the `--force-version` option of Coursier.
 `exclusions` | | List of excluded artifacts in format: `organization:name` (note, *no version* here). The list needs to be separated by whitespace including newlines. Used in cases the artifact resolution process transitively pulls in something that you don't want. Internally the entries are transformed into Coursier's option: `--exclude`.
+main_class | | name of the main class (script entrypoint). If not given it's assumed to be `package.name.ScriptFileNameWithoutScalaExtension`, where `package.name` is the name used in the first `package` declaration found in the file (in other words, you can rely on the default if you name your main class the same as the script file and ensure it has a `main` method, either directly or inherited/mixed-in from something like [`App`](https://www.scala-lang.org/api/current/scala/App.html))
+coursier_version | `v2.0.0-RC6-24` | version of [Coursier](https://get-coursier.io/), the workhorse for JVM and library fetching
+bloop_version | `2.12:1.4.4-2-f9fd96b8` | version of [Bloop](https://scalacenter.github.io/bloop/) which is used to compile the Scala classes
 `COURSIER_OPTS` | | options passed to the Coursier binary. Typically you put [network proxy](https://get-coursier.io/docs/other-proxy.html#cli) and private repository [credentials configuration](https://get-coursier.io/docs/other-credentials) here.
 `JAVA_OPTS` | | options passed to the JVM invocation when the compiled program is being run. A good place to set memory limits.
-main_class | | name of the main class (script entrypoint). If not given it's assumed to be `package.name.ScriptFileNameWithoutScalaExtension`, where `package.name` is the name used in the first `package` declaration found in the file (in other words, you can rely on the default if you name your main class the same as the script file and ensure it has a `main` method, either directly or inherited/mixed-in from something like [`App`](https://www.scala-lang.org/api/current/scala/App.html))
 verbose | `false` | set `true` for more insight into what happens in the background (written to standard error stream) or `false` to only see fatal errors
 
 ## Things to watch for

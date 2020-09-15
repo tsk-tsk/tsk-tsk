@@ -36,6 +36,12 @@ main_class=
 # - true - output log to standard error in the real time
 verbose=false
 
+# version of Coursier, the workhorse for JVM and library fetching
+coursier_version=v2.0.0-RC6-24
+
+# version of Bloop, a fast and well-integrated Scala compilation tool
+bloop_version=2.12:1.4.4-2-f9fd96b8
+
 # variables and functions internal to tsk
 # ---------------------------------------
 tsk_log="${TMPDIR:-"/tmp"}/tsk-$$.log"
@@ -70,8 +76,8 @@ get_abs_script_dir() {
 script_dir="$(dirname "${script_file}")"
 abs_script_dir="$(get_abs_script_dir)"
 td=~/.tsk
-bloop_cmd="${td}/bloop"
-cs_binary="${td}/cs"
+bloop_cmd="${td}/bloop-${bloop_version}"
+cs_binary="${td}/cs-${coursier_version}"
 cs_cmd="${cs_binary} ${COURSIER_OPTS:-}"
 get_sha_sum() {
   if command -v sha256sum > /dev/null 2>&1
@@ -116,6 +122,7 @@ cs_fetch() {
 install_coursier() {
   [ -e "$cs_binary" ] && return 0;
   log "installing coursier"
+  cs_url_prefix="https://github.com/coursier/coursier/releases/download/${coursier_version}"
   case "${os}" in
     "Linux")
       case "$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')" in
@@ -131,14 +138,16 @@ install_coursier() {
               fatal "No java present and no root user, which could install it"; return 1
             fi
           fi
-          cs_url="https://git.io/coursier-cli";;
+          cs_url="${cs_url_prefix}/coursier";;
         "libc.so.6")
-          cs_url="https://git.io/coursier-cli-linux";;
+          cs_url="${cs_url_prefix}/cs-x86_64-pc-linux";;
       esac;;
     "Darwin")
-      cs_url=https://git.io/coursier-cli-macos;;
+      cs_url="${cs_url_prefix}/cs-x86_64-apple-darwin";;
     *)
       log "Platform [${os}] is not officially supported (yet?)"
+      cs_url="${cs_url_prefix}/coursier"
+      command -v java || (fatal "Unknown system: ${os} and no java present. Please install java first"; return 1)
   esac
   ${download_as} "$cs_binary" "$cs_url"
   chmod +x "$cs_binary"
@@ -153,11 +162,13 @@ install_bloop() {
   log "installing bloop"
   # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
   # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
-  PATH="$(p_with_custom_java)" ${cs_cmd} bootstrap ch.epfl.scala:bloopgun_2.12:1.4.3-27-dfdc9971 --standalone -o "${bloop_cmd}"
+  PATH="$(p_with_custom_java)" ${cs_cmd} bootstrap "ch.epfl.scala:bloopgun_${bloop_version}" --standalone -o "${bloop_cmd}"
 }
 
 build_inputs_sha() {
   (
+    echo "${coursier_version}"
+    echo "${bloop_version}"
     echo "${repositories}"
     echo "${dependencies}"
     echo "${forced_versions}"
