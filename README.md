@@ -1,38 +1,8 @@
 # The Scripting Kit
 
-Truly Standalone Scala Scripts on Linux and Mac
-
-## Overview
-
-This shell library lets you write Scala scripts that can run completely standalone on Linux and macOS
-thanks to the automatic background download and installation of all their dependencies: libraries and even Java SDK.
-You can paste the script into an email or a chat and your collegues will be able to run it without any tools,
-similarly you can shell into a k8s pod / docker container (or ssh to a machine) and then simply run the script there
-without any up-front setup.
-
-## Main features
-
-- Minimal prerequisites - apart of a working internet connection you only need `wget` or `curl`.
-- The simplest possible workflow: you write the script and you make it executable. That's it.
-The initial script run downloads those of the required dependencies that don't exist on the machine yet.
-- Regular Scala, without any syntax that'd confuse standard tooling (editable without red squiggles in IntelliJ IDEA).
-When your script grows somewhat, but not to a degree when it'd need a full-blown project, split it into separate files
-with all Scala constructs (like packages) working as expected
-- Use all Scala and Java libraries you need or want, as long they are in a public repository
-
-## Planned features
-
-- Customizable JVM, Coursier and Bloop versions
-- Repositories that require credentials; internet access via proxy
-- Easy migration to a full-blown Scala project when the script grows.
-The script is valid Scala so the existing tooling handles it perfectly well - the TSK-specific parts are hidden
-from the Scala compiler within the Scala comment block. TSK will be able to generate SBT and Mill projects
-when
-
-## Word of caution
-
-This is a very early release and there will be rough edges, especially around different versions of Java, Scala
-and of tools used internally (Bloop, Coursier).
+Truly Standalone Scala Scripts on Linux and Mac. Write / download a script and run it without having to install
+anything. Pass the script to people who know nothing about Scala, JVM, SBT, it they will run for them instantly.
+All required libraries and tools get downloaded in the background on the first run.
 
 ## Example
 
@@ -41,9 +11,7 @@ It demonstrates usage of an some external libraries (sttp and circe):
 
 ```scala
 package app /* 2> /dev/null
-tsk_version=trunk; t="${HOME}/.tsk/tsk-${tsk_version}"; tsk_log="${TMPDIR:-"/tmp"}/tsk-$$.log"
-[ ! -e $t -o "$tsk_version" == "trunk" ] && (u="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/tsk"; mkdir -p $(dirname $t); wget -O $t $u || curl -fLo $t $u) >> "${tsk_log}" 2>&1
-. $t
+source $(curl -L git.io/boot-tsk | sh)
 
 dependencies='
   com.softwaremill.sttp.client::core:2.2.6
@@ -51,7 +19,7 @@ dependencies='
   io.circe::circe-generic:0.12.3
 '
 
-run "$@"; cat "${tsk_log}" >&2; exit 1 # */
+run */
 
 import sttp.client.quick._
 import sttp.client.circe._
@@ -83,13 +51,65 @@ object Joke extends App {
 }
 ```
 
-## Supported platforms
+## Main features
 
-- macOS (tested on AppVeyor, no reports from a fresh macOS system)
-- fresh Docker images of the following Linux distributions:
-  - out of the box: alpine, archlinux, fedora (they've got `curl` / `wget`)
-  - after you install `curl`: debian, ubuntu
-- most likely your Linux distribution even without root permissions as long you've installed `curl` or `wget`
+- Minimal prerequisites - apart of a working internet connection you only need `wget` or `curl`.
+- The simplest possible workflow: you write the script and you make it executable. That's it.
+The initial script run downloads those of the required dependencies that don't exist on the machine yet.
+- Regular Scala, without any syntax that'd confuse standard tooling (editable without red squiggles in IntelliJ IDEA).
+When your script grows somewhat, but not to a degree when it'd need a full-blown project, split it into separate files
+with all Scala constructs (like packages) working as expected
+- Use all Scala and Java libraries you need or want, as long they are in a maven or ivy repository (internal corporate
+repositories requiring credentials and/or proxies are supported as well)
+- support for:
+  - macOS (tested on AppVeyor, also had some positive user reports)
+  - fresh Docker images of the following Linux distributions:
+    - out of the box: alpine, archlinux, fedora (they've got `curl` / `wget`)
+    - after you install `curl`: debian, ubuntu
+  - most likely your Linux distribution even without root permissions as long you've installed `curl` or `wget`
+
+## Planned features
+
+- Customizable JVM, Coursier and Bloop versions
+- Easy migration to a full-blown Scala project when the script grows.
+The script is valid Scala so the existing tooling handles it perfectly well - the TSK-specific parts are hidden
+from the Scala compiler within the Scala comment block. TSK will be able to generate SBT and Mill projects
+- Robust error handling
+
+## How does it work
+
+Running of a Scala program directly by a shell is made possible by ensuring that the Scala file starts with valid
+shell commands, but also by making sure that the script remains a valid Scala source file.
+
+That can be achieved by starting the file with `package app /* 2> /dev/null` line, then having some shell code in the
+following lines and finally by closing the shell part with a `*/` (end of Scala block comment).
+
+This way the script stays valid Scala (as all the shell code exist only within a block comment, which is ignored by
+the Scala compiler anyway) and at the same time it can be usefully run by the shell.
+
+Here is what happens from the shell's perspective:
+1. This first line is an execution of a non-existent command (`package`) with error message suppressed by redirecting it
+to `/dev/null`
+2. The second line imports helper functions from a shell library, which is downloaded if necessary
+3. The lines preceding the `run` helper function call define all settings required by the Scala program (like list of
+libraries that the program uses)
+4. The `run` helper function prepares the program for the execution (which includes making sure all the tools
+and libraries are downloaded) and finally executes the program with a Java Virtual Machine. When the Scala program
+ends running, the script exits, because `run` is using `exec` internally (script process gets replaced by JVM process)
+so the shell won't see (and won't be confused) the Scala source code.
+
+## Variable reference
+
+Variable | Default |Description
+---------|---------|-----------
+`scala_version` | 2.12.12 | version of Scala to be used in compilation and in resolution of libraries (in order to translate `group::artifact:version` to `group:artifact_scalamajordotminorversion:version`)
+`dependencies` | | dependency list specification in format used by [Coursier](https://get-coursier.io/) (`group::artifact:version` or `group:artifact_scalamajordotminorversion:version`) separated by whitespace, including newlines. Example: `'com.typesafe.play::play-json:2.8.2 org.tpolecat::doobie-core:0.9.0'`
+`repositories` | | list of custom artifact repository URLs, which are used in dependency resolution for artifacts that can't be found in the [well-known](https://get-coursier.io/docs/other-repositories) public maven repositories (which are being used always by default). A whitespace (including newline) separated list of URLs. The values listed here are passed to `-r` option of Coursier ([see here for more information](https://get-coursier.io/docs/other-repositories))
+`forced_versions` | | list of artifacts in explicitly stated versions that are to be used instead of the results of the automatic dependency resolution process. Commonly used when you depend on an older version of a library and the newer version is not backward compatible but some of the other dependencies pulls it in transitively. In `group::artifact:version` format (list separated by whitespace, including newlines) as the values are passed to the `--force-version` option of Coursier.
+`exclusions` | | List of excluded artifacts in format: `organization:name` (note, *no version* here). The list needs to be separated by whitespace including newlines. Used in cases the artifact resolution process transitively pulls in something that you don't want. Internally the entries are transformed into Coursier's option: `--exclude`.
+`COURSIER_OPTS` | | options passed to the Coursier binary. Typically you put [network proxy](https://get-coursier.io/docs/other-proxy.html#cli) and private repository [credentials configuration](https://get-coursier.io/docs/other-credentials) here.
+main_class | | name of the main class (script entrypoint). If not given it's assumed to be `package.name.used.in.the.first.package.statement.ScriptFileNameWithoutScalaExtension` (in other words, you can rely on the default if you name your main class the same as the script file and ensure it has a `main` method, either directly or inherited/mixed-in from something like [`App`](https://www.scala-lang.org/api/current/scala/App.html))
+verbose | `false` | set `true` for more insight into what happens in the background (written to standard error stream) or `false` to only see fatal errors
 
 ## Things to watch for
 

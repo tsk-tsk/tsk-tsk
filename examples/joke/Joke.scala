@@ -1,5 +1,5 @@
 package app /* 2> /dev/null
-v=trunk; f=boot-tsk-$v; source $(u=https://git.io/$f; (cat ~/.tsk/$f 2> /dev/null || wget -O - $u || curl -fL $u) | v=$v sh)
+v=0.0.18; source $(u=https://git.io/boot-tsk-$v; (cat ~/.tsk/boot-tsk-$v || curl -fL $u || wget -O - $u) | v=$v sh)
 
 verbose=true
 
@@ -9,7 +9,7 @@ dependencies='
   io.circe::circe-generic:0.12.3
 '
 
-run; cat "${tsk_log}" >&2; exit 1 # */
+run */
 
 import sttp.client.quick._
 import sttp.client.circe._

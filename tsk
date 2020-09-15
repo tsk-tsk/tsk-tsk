@@ -7,28 +7,13 @@
 scala_version=2.12.12
 
 # Dependency list specification
-# in format used by Coursier (group::artifact:version or group:artifact_scalaversion:version).
-# Needs to output the list to the stdout, one line per dependency.
-# Example:
-#
-# dependencies='
-#     com.typesafe.play::play-json:2.8.2
-#     org.tpolecat::doobie-core:0.9.0
-# '
 dependencies=
 
-# List of custom artifact repository URLs, which are used in dependency resolution
-# in addition to the well-known public maven repositories.
-# Needs to output the list to the stdout, one line per repository URL
-# (the values listed here are passed to `-r` option of Coursier),
-# for more information see: https://get-coursier.io/docs/other-repositories
+# List of custom artifact repository URLs
 repositories=
 
 # List of artifacts in explicitly stated versions that are to be used
 # instead of the results of the automatic dependency resolution process.
-# Commonly used when you depend on an older version of a library and the newer version is not backward compatible.
-# Needs to output the list to the stdout, one line per artifact (in format group::artifact:version as
-# the values are passed to the `--force-version` option of Coursier).
 forced_versions=
 
 # List of exclusions (Coursier's option: --exclude | -E  <organization:name>)
@@ -86,7 +71,8 @@ script_dir="$(dirname "${script_file}")"
 abs_script_dir="$(get_abs_script_dir)"
 td=~/.tsk
 bloop_cmd="${td}/bloop"
-cs_cmd="${td}/cs"
+cs_binary="${td}/cs"
+cs_cmd="${cs_binary} ${COURSIER_OPTS:-}"
 get_sha_sum() {
   if command -v sha256sum > /dev/null 2>&1
   then
@@ -96,7 +82,7 @@ get_sha_sum() {
   fi
 }
 p_with_custom_java() {
-  echo "$( $cs_cmd java-home --jvm 8 )/bin:${PATH}"
+  echo "$( ${cs_cmd} java-home --jvm 8 )/bin:${PATH}"
 }
 download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
 module="$( basename "${script_file}" | sed 's/\.scala//g' )"
@@ -119,7 +105,7 @@ core_deps="
 cs_fetch() {
   # shellcheck disable=SC2046
   # (the whole point is to make shell split the repositories and forced versions by words here)
-  "$cs_cmd" fetch -q \
+  ${cs_cmd} fetch -q \
     --scala-version "${scala_version}" \
     $(for repo in ${repositories}; do echo "-r ${repo}"; done) \
     $(for ver in ${forced_versions}; do echo "--force-version ${ver}"; done) \
@@ -128,7 +114,7 @@ cs_fetch() {
 }
 
 install_coursier() {
-  [ -e "$cs_cmd" ] && return 0;
+  [ -e "$cs_binary" ] && return 0;
   log "installing coursier"
   case "${os}" in
     "Linux")
@@ -154,8 +140,8 @@ install_coursier() {
     *)
       log "Platform [${os}] is not officially supported (yet?)"
   esac
-  ${download_as} "$cs_cmd" "$cs_url"
-  chmod +x "$cs_cmd"
+  ${download_as} "$cs_binary" "$cs_url"
+  chmod +x "$cs_binary"
 }
 
 coursier_cache_dir_on_Linux="${HOME}/.cache/coursier/v1"
@@ -167,7 +153,7 @@ install_bloop() {
   log "installing bloop"
   # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
   # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
-  PATH="$(p_with_custom_java)" $cs_cmd bootstrap ch.epfl.scala:bloopgun_2.12:1.4.3-27-dfdc9971 --standalone -o "${bloop_cmd}"
+  PATH="$(p_with_custom_java)" ${cs_cmd} bootstrap ch.epfl.scala:bloopgun_2.12:1.4.3-27-dfdc9971 --standalone -o "${bloop_cmd}"
 }
 
 build_inputs_sha() {
