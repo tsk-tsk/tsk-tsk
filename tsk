@@ -76,7 +76,8 @@ get_abs_script_dir() {
 script_dir="$(dirname "${script_file}")"
 abs_script_dir="$(get_abs_script_dir)"
 td=~/.tsk
-bloop_cmd="${td}/bloop-${bloop_version}"
+# work around https://github.com/coursier/coursier/issues/1856
+bloop_cmd="${td}/bloop-$(echo "${bloop_version}" | sed 's/:/_/g')"
 cs_binary="${td}/cs-${coursier_version}"
 cs_cmd="${cs_binary} ${COURSIER_OPTS:-}"
 get_sha_sum() {
@@ -158,7 +159,7 @@ coursier_cache_dir_on_Darwin="${HOME}/Library/Caches/Coursier/v1"
 coursier_cache_dir="$( [ "${os}" = "Darwin" ] && echo "${coursier_cache_dir_on_Darwin}" || echo "${coursier_cache_dir_on_Linux}" )"
 
 install_bloop() {
-  [ -e "$bloop_cmd" ] && return 0;
+  [ -e "${bloop_cmd}" ] && return 0;
   log "installing bloop"
   # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
   # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
