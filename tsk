@@ -6,6 +6,9 @@
 # version of Scala to be used in compilation and in resolution of libraries
 scala_version=2.12.12
 
+# Source files/directories
+sources=  # defined further down, because it depends on the script name
+
 # Dependency list specification
 dependencies=
 
@@ -68,6 +71,8 @@ then
   rm "${tsk_user_settings}"
 fi
 
+sources="${script_file}"
+
 get_abs_script_dir() {
   cd "${script_dir}" || (fatal "Can't cd to the script directory, symbolic links not supported (yet?)"; return 1)
   pwd -P
@@ -75,6 +80,20 @@ get_abs_script_dir() {
 
 script_dir="$(dirname "${script_file}")"
 abs_script_dir="$(get_abs_script_dir)"
+abs_source_patterns() {
+  echo "${sources}" | awk "BEGIN { RS=\"[ \\t\\n]+\" }
+    /^.+\$/ { print \"${abs_script_dir}/\" \$1}"
+}
+get_abs_sources() {
+  for source_entry in $(abs_source_patterns)
+  do
+    echo "${source_entry}"
+  done | sort -u | grep -v '[^\]\*' | grep -v -F "${script_file}"
+}
+all_sources_json_array() {
+  echo "[ $(get_abs_sources | sed 's/\(.*\)/"\1",/g')
+          \"$(get_abs_script_dir)/$(basename "${script_file}")\" ]"
+}
 td=~/.tsk
 # work around https://github.com/coursier/coursier/issues/1856
 bloop_cmd="${td}/bloop-$(echo "${bloop_version}" | sed 's/:/_/g')"
@@ -171,6 +190,7 @@ build_inputs_sha() {
     echo "${coursier_version}"
     echo "${bloop_version}"
     echo "${repositories}"
+    echo "${sources}"
     echo "${dependencies}"
     echo "${forced_versions}"
     echo "${exclusions}"
@@ -189,9 +209,7 @@ bloop_config_template() {
         "name": "${module}",
         "directory": "${abs_script_dir}",
         "workspaceDir": "${abs_script_dir}",
-        "sources": [
-            "${abs_script_dir}"
-        ],
+        "sources": $(all_sources_json_array),
         "dependencies": [
         ],
         "classpath": [

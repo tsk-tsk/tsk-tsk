@@ -1,5 +1,5 @@
 package app /* 2> /dev/null
-v=0.0.20; source $(u=https://git.io/boot-tsk-$v; (cat ~/.tsk/boot-tsk-$v || curl -fL $u || wget -O - $u) | v=$v sh)
+v=0.0.21; source $(u=https://git.io/boot-tsk-$v; (cat ~/.tsk/boot-tsk-$v || curl -fL $u || wget -O - $u) | v=$v sh)
 
 verbose=true
 
