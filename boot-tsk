@@ -27,13 +27,13 @@ download_as() {
   advice="Please ensure the version '${tsk_version}' is valid, the URL is correct and that internet connection (DNS, proxy) works."
   if command -v curl > /dev/null
   then
-    curl -fLo "$@" >> "${tsk_log}" || fatal_error "
+    curl -fLo "$@" >> "${tsk_log}" 2>&1 || fatal_error "
 ${download_failed}
 The command used: 'curl -fLo $*'.
 ${advice}"
   elif command -v wget > /dev/null
   then
-    wget -O "$@" >> "${tsk_log}" || fatal_error "
+    wget -O "$@" >> "${tsk_log}" 2>&1 || fatal_error "
 ${download_failed}
 The command used: 'wget -O $*'.
 ${advice}"
@@ -61,6 +61,6 @@ EOF
 set -e
 mkdir -p "${tsk_home_dir}" || fatal_error "Directory '${tsk_home_dir}' is required by script to be run.
 Make sure you have sufficient access rights and that no file with this name exists already."
-{ [ ! -e "${boot_tsk_file}" ] || [ "${tsk_version}" = "trunk" ]; } && { download_as "${boot_tsk_file}" "${boot_tsk_url}"; }
+({ [ ! -e "${boot_tsk_file}" ] || [ "${tsk_version}" = "trunk" ]; } && { download_as "${boot_tsk_file}" "${boot_tsk_url}"; }) &
 { [ ! -e "${main_tsk_file}" ] || [ "${tsk_version}" = "trunk" ]; } && { download_as "${main_tsk_file}" "${main_tsk_url}"; }
 echo "${main_tsk_file}"
