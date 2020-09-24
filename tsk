@@ -57,15 +57,19 @@ fatal() {
   log "FATAL ERROR: $*"
 }
 
+extract_user_settings_part() {
+  sed -n '/\/\*/,/\*\// p' | tail -n +2 | head -n -1 | grep -v -e '^. ' -e '^source '
+}
+
 # The alternative way of sourcing the TSK (~/.tsk/tsk-x.y.z Foo.scala)
 # mainly serves debugging purposes as you are able to check output of the individual functions
-script_file="$(echo "$0" | grep -q '\.scala$' && echo "${0}" || echo "${1}")"
+script_file="$(echo "$0" | grep -q '\.sca\?l\?a\?$' && echo "${0}" || echo "${1}")"
 [ -e "${script_file}" ] || (fatal \
-  "tsk must be sourced either 1) from within a *.scala file or 2) with a *.scala file argument (~/.tsk/tsk-x.y.z Foo.scala)"; return 1)
-if echo "$0" | grep -vq '\.scala$'
+  "tsk must be sourced either 1) from within a *.scala/*.sc file or 2) with a *.scala/*.sc file argument (~/.tsk/tsk-x.y.z Foo.scala)"; return 1)
+if echo "$0" | grep -vq '\.sca\?l\?a\?$'
 then
   tsk_user_settings="${TMPDIR:-"/tmp"}/tsk-$$.settings"
-  sed -n '/\. /,/exit 1/ p' "${script_file}" | tail -n +2 | head -n -1 > "${tsk_user_settings}"
+  extract_user_settings_part < "${script_file}" > "${tsk_user_settings}"
   # shellcheck disable=SC1090
   . "${tsk_user_settings}"
   rm "${tsk_user_settings}"
@@ -359,7 +363,7 @@ EOF
     )
 }
 
-prepare_for_running() {
+prepare_for_running_with_bloop() {
   install_coursier          || (fatal "could not install Coursier"; return 1)
   install_bloop             || (fatal "could not install Bloop"; return 1)
   mkdir -p "${bloop_dir}"
@@ -389,6 +393,10 @@ exec_java() {
   PATH="$(p_with_custom_java)" exec java -cp "$(script_classpath)" ${JAVA_OPTS:-} "$(get_main_class)" "$@"
 }
 
+exec_ammonite() {
+  PATH="$(p_with_custom_java)" exec ${cs_cmd} launch ammonite -- "${script_file}" "$@"
+}
+
 log_sink() {
   case "${verbose}" in
     "false")
@@ -402,7 +410,7 @@ log_sink() {
 
 run() {
   set -o pipefail
-  if (prepare_for_running 2>&1 | log_sink)
+  if (prepare_for_running_with_bloop 2>&1 | log_sink)
   then
     rm "${tsk_log}"
     eval "$(printf "%s" "exec_java $(
@@ -415,8 +423,19 @@ run() {
   fi
 }
 
-test_fork() {
-  echo testing
+run_with_ammonite() {
+  set -o pipefail
+  if (install_coursier 2>&1 | log_sink)
+  then
+    rm "${tsk_log}"
+    eval "$(printf "%s" "exec_ammonite $(
+      seq "${argc}" | awk '{printf "\"$arg_" $1 "\" "}'
+    )")"
+  else
+    [ "${verbose}" != "true" ] && cat "${tsk_log}" >&2
+    rm "${tsk_log}"
+    exec false
+  fi
 }
 
 # Working around ash (Alpine) lack of arrays, to let use simply write `run`

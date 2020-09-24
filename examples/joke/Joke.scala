@@ -1,5 +1,6 @@
-package app /* 2> /dev/null
-v=0.0.21; source $(u=https://git.io/boot-tsk-$v; (cat ~/.tsk/boot-tsk-$v || curl -fL $u || wget -O - $u) | v=$v sh)
+/// TSK - The Scripting Kit      2> /dev/null \\\
+/*
+v=0.0.21; source $(u=https://git.io/boot-tsk-$v; (cat ~/.tsk/boot-tsk-$v || curl -sfL $u || wget -qO - $u) | v=$v sh)
 
 verbose=true
 
@@ -9,24 +10,28 @@ dependencies='
   io.circe::circe-generic:0.12.3
 '
 
-run */
+run
+ */
 
-import sttp.client.quick._
-import sttp.client.circe._
 import io.circe.generic.auto._
+import sttp.client.circe._
+import sttp.client.quick._
 
 case class JokeResponse(
-  setup: String,
-  delivery: String
+    setup: String,
+    delivery: String
 )
 
 object Joke extends App {
-  quickRequest
-    .get(uri"https://sv443.net/jokeapi/v2/joke/Programming?blacklistFlags=nsfw,racist,political,sexist,religious&type=twopart")
+  val response = quickRequest
+    .get(
+      uri"https://sv443.net/jokeapi/v2/joke/Programming?blacklistFlags=nsfw,racist,political,sexist,religious&type=twopart"
+    )
     .response(asJson[JokeResponse])
-    .header("User-Agent", "curl/7.68.0", replaceExisting = true)  // sv443.net bans Java apparently
+    .header("User-Agent", "curl/7.68.0", replaceExisting = true) // sv443.net bans Java apparently
     .send()
-    .body match {
+    .body
+  response match {
     case Right(JokeResponse(setup, delivery)) =>
       println(setup)
       Thread.sleep(2000)
