@@ -1,16 +1,12 @@
 /// TSK - The Scripting Kit      2> /dev/null \\\
 /*
-v=0.0.21; source $(u=https://git.io/boot-tsk-$v; (cat ~/.tsk/boot-tsk-$v || curl -sfL $u || wget -qO - $u) | v=$v sh)
-
 verbose=true
-
 dependencies='
   com.softwaremill.sttp.client::core:2.2.6
   com.softwaremill.sttp.client::circe:2.2.6
   io.circe::circe-generic:0.12.3
 '
-
-run
+v=0.0.22; source $(u=git.io/boot-tsk-$v; (cat ~/.tsk/boot-tsk-$v || curl -sfL $u || wget -qO - $u) | v=$v sh); run
  */
 
 import io.circe.generic.auto._
