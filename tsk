@@ -4,28 +4,30 @@
 # -------------------------------------------------------------
 
 # version of Scala to be used in compilation and in resolution of libraries
-scala_version=2.12.12
+scala_version="${scala_version:-2.12.12}"
 
 # Source files/directories
-sources=  # defined further down, because it depends on the script name
+# if not set explicitly, it's being set to ${script_file} further down
+# (by default only the main script belongs to the sources)
+sources="${sources:-}"
 
 # Dependency list specification
-dependencies=
+dependencies="${dependencies:-}"
 
 # List of custom artifact repository URLs
-repositories=
+repositories="${repositories:-}"
 
 # List of artifacts in explicitly stated versions that are to be used
 # instead of the results of the automatic dependency resolution process.
-forced_versions=
+forced_versions="${forced_versions:-}"
 
 # List of exclusions (Coursier's option: --exclude | -E  <organization:name>)
-exclusions=
+exclusions="${exclusions:-}"
 
 # Name of the main class (script entrypoint).
 # If not given it's assumed to be `package.name.used.in.the.first.package.statement.ScriptFileNameWithoutScalaExtension`
 # (in other words, you can rely on the default if you name your main class the same as the script file and ensure it has `main` method)
-main_class=
+main_class="${main_class:-}"
 
 # By default (`false`) TSK will output a log of it's internal operations (to the standard error stream)
 # only when a failure occur. This is to let you be able to pipe outputs of your script to other programs or files
@@ -37,17 +39,17 @@ main_class=
 # valid values:
 # - false - (default) output log to standard error on TSK failure, don't output anything if all goes well
 # - true - output log to standard error in the real time
-verbose=false
+verbose="${verbose:-false}"
 
 # version of Coursier, the workhorse for JVM and library fetching
-coursier_version=v2.0.0-RC6-24
+coursier_version="${coursier_version:-v2.0.0-RC6-24}"
 
 # version of Bloop, a fast and well-integrated Scala compilation tool
-bloop_version=2.12:1.4.4-2-f9fd96b8
+bloop_version="${bloop_version:-2.12:1.4.4-2-f9fd96b8}"
 
 # variables and functions internal to tsk
 # ---------------------------------------
-tsk_log="${TMPDIR:-"/tmp"}/tsk-$$.log"
+tsk_log="${tsk_log:-${TMPDIR:-"/tmp"}/tsk-$$.log}"
 
 log() {
   >&2 echo "$@"
@@ -75,7 +77,7 @@ then
   rm "${tsk_user_settings}"
 fi
 
-sources="${script_file}"
+sources="${sources:-script_file}"
 
 get_abs_script_dir() {
   cd "${script_dir}" || (fatal "Can't cd to the script directory, symbolic links not supported (yet?)"; return 1)
