@@ -5,6 +5,8 @@ and run it without having to install anything. Pass the script to people who kno
 it will run for them instantly.
 All required libraries and tools get downloaded in the background on the first run.
 
+![](doc/img/simple-demo.gif)
+
 ## Example
 
 Here is all you need to write a Scala script, that displays a random programming joke fetched from a JSON API.
