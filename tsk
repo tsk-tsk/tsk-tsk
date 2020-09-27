@@ -77,7 +77,7 @@ then
   rm "${tsk_user_settings}"
 fi
 
-sources="${sources:-script_file}"
+sources="${sources:-${script_file}}"
 
 get_abs_script_dir() {
   cd "${script_dir}" || (fatal "Can't cd to the script directory, symbolic links not supported (yet?)"; return 1)
