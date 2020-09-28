@@ -3,9 +3,9 @@
 
 # TSK - The Scripting Kit
 <img alt="AppVeyor CI" src="https://ci.appveyor.com/api/projects/status/github/tsk-tsk/tsk-tsk?branch=trunk&svg=true">
-</div>
 
 Truly Standalone Scala Scripts on Linux and Mac.
+</div>
 
 Add a special short comment to the top of your Scala program
 and run it without having to install anything. Pass the script to people who know nothing about Scala, JVM, SBT,
