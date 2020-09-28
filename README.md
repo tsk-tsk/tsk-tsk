@@ -1,4 +1,8 @@
-# The Scripting Kit
+<div align="center">
+<img src="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/trunk/doc/img/tsk-tsk-logo.png" alt="logo" width="20%" height="20%">
+</div>
+
+# TSK - The Scripting Kit
 
 Truly Standalone Scala Scripts on Linux and Mac. Add a special short comment to the top of your Scala program
 and run it without having to install anything. Pass the script to people who know nothing about Scala, JVM, SBT,
