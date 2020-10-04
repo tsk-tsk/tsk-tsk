@@ -42,7 +42,7 @@ main_class="${main_class:-}"
 verbose="${verbose:-false}"
 
 # version of Coursier, the workhorse for JVM and library fetching
-coursier_version="${coursier_version:-v2.0.0-RC6-24}"
+coursier_version="${coursier_version:-v2.0.0}"
 
 # version of Bloop, a fast and well-integrated Scala compilation tool
 bloop_version="${bloop_version:-2.12:1.4.4-2-f9fd96b8}"
