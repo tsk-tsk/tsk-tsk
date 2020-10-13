@@ -6,7 +6,7 @@ dependencies='
   com.softwaremill.sttp.client::circe:2.2.6
   io.circe::circe-generic:0.12.3
 '
-v=0.0.22; source $(u=git.io/boot-tsk-$v; (cat ~/.tsk/boot-tsk-$v || curl -sfL $u || wget -qO - $u) | v=$v sh); run
+v=0.1.1; source $(u=git.io/boot-tsk-$v; (cat ~/.tsk/boot-tsk-$v || curl -sfL $u || wget -qO - $u) | v=$v sh); run
  */
 
 import io.circe.generic.auto._
