@@ -11,5 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v2
       - name: Run smoke tests
-        run: ls -al && ./test/smoke.sh
+        run: ./test/smoke.sh
