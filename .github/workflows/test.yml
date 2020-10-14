@@ -7,7 +7,7 @@ on:
     branches: [ trunk]
 
 jobs:
-  vanity:
+  smoke-test:
     runs-on: ubuntu-latest
 
     steps:
