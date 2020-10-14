@@ -1,4 +1,4 @@
-name: Vanity URLs for all tagged versions
+name: Tests
 
 on:
   push:
