@@ -1,0 +1,14 @@
+name: Vanity URLs for all tagged versions
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  vanity:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run smoke tests
+        run: ./test/smoke.sh
