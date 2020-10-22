@@ -59,22 +59,50 @@ fatal() {
   log "FATAL ERROR: $*"
 }
 
-extract_user_settings_part() {
-  sed -n '/\/\*/,/\*\// p' | tail -n +2 | head -n -1 | grep -v -e '^. ' -e '^source '
+# "Safe sourcing" is the current answer to the question:
+# "how to just load the settings (dependencies, other variables) from the script file
+# without running the script nor executing any side effects?"
+# Under some assumptions the script can be safely sourced thanks to some command aliasing.
+# All unsafe commands that are common in preambles (source, ., cat, curl, wget, sh)
+# are aliased to a no-op action (/usr/bin/true) and the commands that start the script
+# (and some top-level Scala keywords) are aliased to `return`
+# so sourcing of script stops after the interesting part (variables) is set.
+#
+# A consequence is that the settings part needs to be quite dumb, as it can't count
+# on the mentioned programs to work.
+safely_source() {
+  tsk_user_settings_tmp="${TMPDIR:-"/tmp"}/tsk-$$.settings"
+  {
+    echo 'shopt -s expand_aliases'
+    for cmd in . source cat curl wget sh
+      do echo "alias $cmd=true"; done
+    for cmd in . run_with_ammonite run package import object case class trait implicit private
+      do echo "alias $cmd=return;"; done
+    cat "${1}"
+  } > "${tsk_user_settings_tmp}"
+
+  . "${tsk_user_settings_tmp}"
+  rm "${tsk_user_settings_tmp}"
+
+  shopt -u expand_aliases
+  unalias . source cat curl wget sh
+  unalias run_with_ammonite run
+  unalias package import object case class trait implicit private
 }
 
 # The alternative way of sourcing the TSK (~/.tsk/tsk-x.y.z Foo.scala)
 # mainly serves debugging purposes as you are able to check output of the individual functions
 script_file="$(echo "$0" | grep -q '\.sca\?l\?a\?$' && echo "${0}" || echo "${1}")"
 [ -e "${script_file}" ] || (fatal \
-  "tsk must be sourced either 1) from within a *.scala/*.sc file or 2) with a *.scala/*.sc file argument (~/.tsk/tsk-x.y.z Foo.scala)"; return 1)
+  "tsk must be sourced in one of two supported ways:
+1) from within a *.scala/*.sc file or
+2) with a *.scala/*.sc file argument (. ~/.tsk/tsk-x.y.z Foo.scala)
+
+instead found: [${script_file}]
+the arguments were: [$*]"; return 1)
 if echo "$0" | grep -vq '\.sca\?l\?a\?$'
 then
-  tsk_user_settings="${TMPDIR:-"/tmp"}/tsk-$$.settings"
-  extract_user_settings_part < "${script_file}" > "${tsk_user_settings}"
-  # shellcheck disable=SC1090
-  . "${tsk_user_settings}"
-  rm "${tsk_user_settings}"
+  safely_source "${script_file}"
 fi
 
 sources="${sources:-${script_file}}"

@@ -1,0 +1,1 @@
+// 2> /dev/null; source $( curl -L git.io/boot-tsk-VERSION | sh ); run

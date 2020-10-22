@@ -4,9 +4,8 @@ testEchoToStandardOutput() {
   # Given a simple script
 
   # shellcheck disable=SC2016
-  preamble='// 2> /dev/null; source $( curl -L git.io/boot-tsk | sh ); run'
   scala_script='object Hello extends App { println("hello") }'
-  echo "${preamble}"      > "${wd}/Hello.scala"
+  preamble shortest      > "${wd}/Hello.scala"
   echo "${scala_script}" >> "${wd}/Hello.scala"
   chmod +x "${wd}/Hello.scala"
 
