@@ -54,6 +54,6 @@ oneTimeSetUp() {
   bash -c "${wd}/Easy.scala" > "${standard_output_file}" 2> "${standard_error_file}"
 }
 
-. ./test/helpers.sh
+. ./test/lib/helpers.sh
 [ -n "${ZSH_VERSION:-}" ] && SHUNIT_PARENT=$0
-. ./test/shunit2
+. ./test/lib/shunit2

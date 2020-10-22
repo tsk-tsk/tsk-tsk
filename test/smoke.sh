@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 testEchoToStandardOutput() {
   # Given a simple script
@@ -32,7 +32,7 @@ setUp() {
 }
 
 
-. ./test/helpers.sh
+. ./test/lib/helpers.sh
 # Load and run shUnit2.
 [ -n "${ZSH_VERSION:-}" ] && SHUNIT_PARENT=$0
-. ./test/shunit2
+. ./test/lib/shunit2
