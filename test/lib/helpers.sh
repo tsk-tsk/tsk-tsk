@@ -16,7 +16,8 @@ emulateTskDownload() {
 preamble() {
   sed "s/VERSION/${tsk_version}/g
        s/SETTINGS/${2}/g;" "./doc/preambles/${1}" | \
-       sed "s|git.io/boot-tsk-${tsk_version}|raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/boot-tsk|g"
+       sed "s|git.io/boot-tsk-${tsk_version}|raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/boot-tsk|g
+            s|git.io/boot-tsk-\\\$v|raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/boot-tsk|g"
 }
 
 saveAsScript() {
