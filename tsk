@@ -152,6 +152,7 @@ os=$(uname)
 bloop_dir="${script_dir}/.bloop"
 bloop_module_config="${bloop_dir}/${module}.json"
 cs_fetch_result="${bloop_dir}/${module}.cs_fetch.result"
+classpath_root="${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
 
 scala_library="org.scala-lang:scala-library:${scala_version}"
 core_deps="
@@ -404,14 +405,28 @@ prepare_for_running_with_bloop() {
 }
 
 script_classpath() {
-  echo "$(cs_fetch --default "${scala_library}" ${dependencies} | sort -ds | awk '{printf("%s:", $0)}'
-         )${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
+  echo "$(cs_fetch --default "${scala_library}" ${dependencies} | \
+          sort -ds | \
+          awk '{printf("%s:", $0)}'
+         )${classpath_root}"
+}
+
+get_package() {
+  awk '/^ *package/ { print $2 "." }' "${script_file}" | head -n 1
+}
+
+detect_main_class() {
+  PATH="$(p_with_custom_java)" javap "${classpath_root}/$(get_package | tr . / )"*.class | \
+    tr -d "\n" | \
+    sed 's/Compiled from/\nCompiled from/g' | \
+    grep -F 'public static void main(java.lang.String[])' | \
+    sed 's/.*class \([a-zA-Z0-9\.]\+\).*/\1/g'
 }
 
 get_main_class() {
   if [ -z "${main_class}" ]
   then
-    echo "$(awk '/^package/ { print $2 "." }' "${script_file}" | head -n 1)${module}"
+    detect_main_class
   else
     echo "${main_class}"
   fi

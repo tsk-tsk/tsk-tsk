@@ -23,8 +23,24 @@ object Easy extends App { println("ok") }'
   } | saveAsScript "${wd}/Easy.scala"
 
   source ~/.tsk/tsk-local "${wd}/Easy.scala"
+  prepare_for_running_with_bloop
 
   assertEquals "app.Easy" "$(get_main_class)"
+
+}
+
+testClassMatchesScriptNameButThereIsSomeDeeplyNestedPackage() {
+  {
+    preamble offline
+    echo '
+package com.companyname.systemname.modulename
+object Easy extends App { println("ok") }'
+  } | saveAsScript "${wd}/Easy.scala"
+
+  source ~/.tsk/tsk-local "${wd}/Easy.scala"
+  prepare_for_running_with_bloop
+
+  assertEquals "com.companyname.systemname.modulename.Easy" "$(get_main_class)"
 
 }
 
@@ -35,6 +51,7 @@ testClassAndScriptNameMismatch() {
   } | saveAsScript "${wd}/Easy.scala"
 
   source ~/.tsk/tsk-local "${wd}/Easy.scala"
+  prepare_for_running_with_bloop
 
   assertEquals "PieceOfCake" "$(get_main_class)"
 }
@@ -56,4 +73,5 @@ oneTimeSetUp() {
 
 . ./test/lib/helpers.sh
 [ -n "${ZSH_VERSION:-}" ] && SHUNIT_PARENT=$0
+tsk_version=local
 . ./test/lib/shunit2
