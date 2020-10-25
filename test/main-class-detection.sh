@@ -62,6 +62,7 @@ oneTimeSetUp() {
   standard_output_file="${outputDir}/stdout"
   standard_error_file="${outputDir}/stderr"
   wd="${SHUNIT_TMPDIR}"
+  emulateTskDownload
 
   {
     preamble offline
