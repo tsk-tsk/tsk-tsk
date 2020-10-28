@@ -77,7 +77,7 @@ safely_source() {
     for cmd in . source cat curl wget sh
       do echo "alias $cmd=true"; done
     for cmd in . run_with_ammonite run package import object case class trait implicit private
-      do echo "alias $cmd=return;"; done
+      do echo "alias $cmd='return 0;'"; done
     cat "${1}"
   } > "${tsk_user_settings_tmp}"
 
@@ -95,11 +95,11 @@ safely_source() {
 script_file="$(echo "$0" | grep -q '\.sca\?l\?a\?$' && echo "${0}" || echo "${1}")"
 [ -e "${script_file}" ] || (fatal \
   "tsk must be sourced in one of two supported ways:
-1) from within a *.scala/*.sc file or
-2) with a *.scala/*.sc file argument (. ~/.tsk/tsk-x.y.z Foo.scala)
+1) from within a *.scala/*.sc file (normal operation) or
+2) with a *.scala/*.sc file argument (. ~/.tsk/tsk-x.y.z Foo.scala) - for debugging
 
 instead found: [${script_file}]
-the arguments were: [$*]"; return 1)
+the arguments were: [$0 $*]"; return 1)
 if echo "$0" | grep -vq '\.sca\?l\?a\?$'
 then
   safely_source "${script_file}"
