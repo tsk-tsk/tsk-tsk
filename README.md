@@ -24,52 +24,57 @@ and set up overhead.
 
 ## Example
 
-Here is all you need to write a Scala script, that displays a random programming joke fetched from a JSON API.
-It demonstrates usage of an some external libraries (sttp and circe):
+Let's say you'd like to find out the days of week which are the most intensive for a project (the most file modifications happen)
+so you build a program, that will display a report like:
+```
+MONDAY       5%
+WEDNESDAY   50%
+THURSDAY    11%
+FRIDAY      11%
+SATURDAY     5%
+SUNDAY      16%
+```
+when run in the project's directory.
 
+In order to achieve this you might:
+
+1. create a following Scala app using only Scala's and Java's standard libraries (in a `ModsPerDayOfWeek.scala` file):
 ```scala
-// 2> /dev/null \
-/*
-source $(curl -sL git.io/boot-tsk | sh)
+import java.io.File
+import java.time._
+import java.util.Date
 
-dependencies='
-  com.softwaremill.sttp.client::core:2.2.6
-  com.softwaremill.sttp.client::circe:2.2.6
-  io.circe::circe-generic:0.12.3
-'
+object ModsPerDayOfWeek extends App {
+  
+  def modificationDateTime(file: File) =
+    ZonedDateTime.ofInstant(new Date(file.lastModified()).toInstant, ZoneId.systemDefault())
 
-run
-*/
+  val dayCounts = new File(".")
+    .listFiles()
+    .map(modificationDateTime)
+    .groupBy(_.getDayOfWeek)
+    .mapValues(_.length)
+  val total = dayCounts.values.sum
+  dayCounts
+    .toList
+    .sortBy(_._1)
+    .foreach { case (day, count) =>
+      println(f"$day%-10s ${count * 100 / total}%3d%%")
+    }
 
-import sttp.client.quick._
-import sttp.client.circe._
-import io.circe.generic.auto._
-
-case class JokeResponse(
-  setup: String,
-  delivery: String
-)
-
-object Joke extends App {
-  quickRequest
-    .get(uri"https://sv443.net/jokeapi/v2/joke/Programming?blacklistFlags=nsfw,racist,political,sexist,religious&type=twopart")
-    .response(asJson[JokeResponse])
-    .header("User-Agent", "curl/7.68.0", replaceExisting = true)  // sv443.net bans Java apparently
-    .send()
-    .body match {
-    case Right(JokeResponse(setup, delivery)) =>
-      println(setup)
-      Thread.sleep(2000)
-      for (i <- (3 to 1 by -1)) {
-        println(s"${i}...")
-        Thread.sleep(300)
-      }
-      println(delivery)
-    case Left(_) =>
-      println("Sorry, no joke this time")
-  }
 }
 ```
+2. turn the file into a self-installable-and-executable shell script:
+- prepend the script with:
+```bash
+// 2> /dev/null; source $(curl -sL git.io/boot-tsk | sh); run; exit
+```
+- set the executable bit: `chmod +x ./ModsPerDayOfWeek.scala`
+
+And then you can run your script already: `./ModsPerDayOfWeek.scala`.
+The best part is that the script is now ready to be run on all Linux and Mac systems, as long they only have `curl` or `wget` installed.
+
+The example is meant to demonstrate the basics, but the real fun begins with external libraries that can come from both public and company-private repositories. See wiki for more examples. 
 
 ## Main features
 
