@@ -7,10 +7,16 @@
 Truly Standalone Scala Scripts on Linux and Mac.
 </div>
 
-Add a special short comment to the top of your Scala program
-and run it without having to install anything. Pass the script to people who know nothing about Scala, JVM, SBT,
-it will run for them instantly.
-All required libraries and tools get downloaded in the background on the first run.
+Prepend your Scala program with a specially crafted preamble to turn it into a self-installable-and-executable shell script,
+that everybody can run on their systems without any prerequisites.
+
+The preamble (shell commands disguised as Scala comments) ensures that the prerequisites (everything needed to compile and execute
+the Scala program) get first downloaded and then used to run the program. Caching is used to skip unnecessary downloads and recompilations
+after the program has been run already.
+
+The users of the scripts don't need to install or even know about JVM, SBT or any of the common tooling related to Scala programming.
+This makes TSK-powered scripts ideal for situations in Scala would be normally rejected because of the installation complexity
+and set up overhead.
 
 ![](doc/img/simple-demo.gif)
 
