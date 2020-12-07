@@ -2,9 +2,11 @@
 <img src="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/trunk/doc/img/tsk-tsk-logo.png" alt="logo" width="20%" height="20%">
 
 # TSK - The Scripting Kit
-<img alt="AppVeyor CI" src="https://ci.appveyor.com/api/projects/status/github/tsk-tsk/tsk-tsk?branch=trunk&svg=true">
 
 Truly Standalone Scala Scripts on Linux and Mac.
+
+<img alt="AppVeyor CI" src="https://ci.appveyor.com/api/projects/status/github/tsk-tsk/tsk-tsk?branch=trunk&svg=true">
+
 </div>
 
 Prepend your Scala program with a specially crafted preamble to turn it into a self-installable-and-executable shell script,
