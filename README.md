@@ -67,16 +67,16 @@ object ModsPerDayOfWeek extends App {
 }
 ```
 2. turn the file into a self-installable-and-executable shell script:
-- prepend the script with:
+- open editor again and, at the very top of the file add the following comment (called TSK preamble and consisting of a couple of shell commands):
 ```bash
 // 2> /dev/null; source $(curl -sL git.io/boot-tsk | sh); run; exit
 ```
 - set the executable bit: `chmod +x ./ModsPerDayOfWeek.scala`
 
-And then you can run your script already: `./ModsPerDayOfWeek.scala`.
-The best part is that the script is now ready to be run on all Linux and Mac systems, as long they only have `curl` or `wget` installed.
+And then your script is ready for running - try it out by typing: `./ModsPerDayOfWeek.scala`.
+The best part is that no matter on which Linux or Mac system you run it, it will work, as long they only have `curl` or `wget` installed.
 
-The example is meant to demonstrate the basics, but the real fun begins with external libraries that can come from both public and company-private repositories. See wiki for more examples. 
+The example is meant to demonstrate the basics, but the real fun begins with external libraries that can come from both public and company-private repositories. See [the wiki](https://github.com/tsk-tsk/tsk-tsk/wiki) for more examples. 
 
 ## Main features
 
