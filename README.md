@@ -28,8 +28,8 @@ and set up overhead.
 ## Example
 
 Say you've got some unstructured text file containing URL addresses and that you need to extract unique URLs.
-Maybe you thought about using grep for that - but on a closer inspection URLs are quite involved beasts,
-with all the query parameters, escaping etc. the regular expression may be difficult to get right
+Maybe you thought about using grep for that - but on a closer inspection URLs are quite involved beasts!
+With all the query parameters, escaping etc. the regular expression may be difficult to get right
 (let alone the readability of the end result). You would be better off using some proper URL validation method,
 as typically found in programming languages. Ideally the programming language would be suitable for scripting,
 so it's straightforward to write and run a program without having to fight tooling / dependencies.
