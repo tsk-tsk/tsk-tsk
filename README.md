@@ -49,7 +49,9 @@ import java.util.Date
 object ModsPerDayOfWeek extends App {
   
   def modificationDateTime(file: File) =
-    ZonedDateTime.ofInstant(new Date(file.lastModified()).toInstant, ZoneId.systemDefault())
+    ZonedDateTime.ofInstant(
+      new Date(file.lastModified()).toInstant,
+      ZoneId.systemDefault())
 
   val dayCounts = new File(".")
     .listFiles()
