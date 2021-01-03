@@ -9,7 +9,8 @@ Truly Standalone Scala Scripts on Linux and Mac.
 
 </div>
 
-Prepend your Scala program with a specially crafted preamble to turn it into a self-installable-and-executable shell script,
+Make your Scala programs instantly runnable just by prepending it with a special (IDE / tooling neutral) preamble.
+The program becomes a self-installable-and-executable shell script,
 that everybody can run on their systems without any prerequisites.
 
 
@@ -26,64 +27,61 @@ and set up overhead.
 
 ## Example
 
-Let's say you'd like to find out the days of week which are the most intensive for a project (the most file modifications happen)
-so you build a program, that will display a report like:
-```
-MONDAY       5%
-WEDNESDAY   50%
-THURSDAY    11%
-FRIDAY      11%
-SATURDAY     5%
-SUNDAY      16%
-```
-when run in the project's directory.
+Say you've got some unstructured text file containing URL addresses and that you need to extract unique URLs.
+Maybe you thought about using grep for that - but on a closer inspection URLs are quite involved beasts,
+with all the query parameters, escaping etc. the regular expression may be difficult to get right
+(let alone the readability of the end result). You would be better off using some proper URL validation method,
+as typically found in programming languages. Ideally the programming language would be suitable for scripting,
+so it's straightforward to write and run a program without having to fight tooling / dependencies.
 
-In order to achieve this you might:
 
-1. create a following Scala app using only Scala's and Java's standard libraries (in a `ModsPerDayOfWeek.scala` file):
+Luckily Scala is one of the languages in which URL validation is available within the standard library
+(via Java SDK) and with help of this project it is well suited for scripting as well. You can make a runnable
+URLGrep script using Scala and TSK in a couple of minutes by following the steps below:
+
+1. Save the following snippet into `URLGrep.scala` file:
 ```scala
-import java.io.File
-import java.time._
-import java.util.Date
+// 2> /dev/null; source $(curl -sL https://git.io/boot-tsk | sh); run; exit
 
-object ModsPerDayOfWeek extends App {
-  
-  def modificationDateTime(file: File) =
-    ZonedDateTime.ofInstant(
-      new Date(file.lastModified()).toInstant,
-      ZoneId.systemDefault())
+object URLGrep {
 
-  val dayCounts = new File(".")
-    .listFiles()
-    .map(modificationDateTime)
-    .groupBy(_.getDayOfWeek)
-    .mapValues(_.length)
-  val total = dayCounts.values.sum
-  dayCounts
-    .toList
-    .sortBy(_._1)
-    .foreach { case (day, count) =>
-      println(f"$day%-10s ${count * 100 / total}%3d%%")
-    }
+  def main(args: Array[String]) = {
+    val urls = for {
+      line  <- io.Source.stdin.getLines()
+      token <- line.split("\\s+")
+      clean <- token.split("[\"']")
+      if util.Try(new java.net.URL(clean)).isSuccess
+    } yield clean
+    urls.toSet.toSeq.sorted.foreach(println)
+  }
 
 }
 ```
-2. turn the file into a self-installable-and-executable shell script:
-- open editor again and, at the very top of the file add the following comment (called TSK preamble and consisting of a couple of shell commands):
-```bash
-// 2> /dev/null; source $(curl -sL git.io/boot-tsk | sh); run; exit
+2. Set the executable bit: `chmod +x URLGrep.scala`
+
+Voilà! Your script is ready for running. Pipe some text to its standard input to try it out:
+```shell
+echo something something http://google.com | ./URLGrep.scala
+curl https://scala-lang.org | ./URLGrep.scala
 ```
-- set the executable bit: `chmod +x ./ModsPerDayOfWeek.scala`
 
-And then your script is ready for running - try it out by typing: `./ModsPerDayOfWeek.scala`.
-The best part is that no matter on which Linux or Mac system you run it, it will work, as long they only have `curl` or `wget` installed.
+The first run may take quite long because TSK needs to download several dependencies in the background first.
+Depending on the internet connection it may be even a couple of minutes. The second and next runs will be quick, because
+everything is cached on disk already.
 
-The example is meant to demonstrate the basics, but the real fun begins with external libraries that can come from both public and company-private repositories. See [the wiki](https://github.com/tsk-tsk/tsk-tsk/wiki) for more examples. 
+One nice thing is that no matter on which Linux or Mac system you run it, it will work, as long they have `curl` or `wget` installed.
+Think - you can pass that script to your coworkers, it'll work without any cumbersome tool installation needed.
+The same for Docker containers - as long the image has `curl` / `wget`, your program will work there.
+
+The above example is meant to whet your appetite by demonstrating some useful basics,
+but the real fun begins with external libraries that can come from both public and company-private repositories.
+
+Make sure you glance over the features section and also see [the wiki](https://github.com/tsk-tsk/tsk-tsk/wiki) for more examples.
 
 ## Main features
 
-- Minimal prerequisites - apart of a working internet connection you only need `wget` or `curl`.
-- The simplest possible workflow: you write the script and you make it executable. That's it.
+- Minimal prerequisites - apart from a working internet connection you only need `wget` or `curl`.
+- The simplest possible workflow: you write the script, and you make it executable. That's it.
 The initial script run downloads those of the required dependencies that don't exist on the machine yet.
 - Regular Scala, without any syntax that'd confuse standard tooling (editable without red squiggles in IntelliJ IDEA).
 When your script grows somewhat, but not to a degree when it'd need a full-blown project, split it into separate files
