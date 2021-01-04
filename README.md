@@ -24,7 +24,7 @@ This makes TSK-powered scripts ideal for situations in which Scala would be norm
 and set up overhead.
 
 <div align="center">
-![](doc/img/simple-demo.gif)
+<img src="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/trunk/doc/img/simple-demo.gif" alt="demo">
 </div>
 
 ## Example
@@ -41,7 +41,7 @@ Luckily Scala is one of the languages in which URL validation is available (with
 and with help of this project it is well suited for scripting as well. You can make a runnable
 URLGrep script using Scala and TSK in a couple of minutes by following the steps below:
 
-1. Save the following snippet into `URLGrep.scala` file:
+1. Save the following snippet into `URLGrep.scala` file (or [download it](https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/trunk/examples/urlgrep/URLGrep.scala)):
 ```scala
 // 2> /dev/null; source $(curl -sL https://git.io/boot-tsk | sh); run; exit
 
