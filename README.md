@@ -23,20 +23,22 @@ The users of the scripts don't need to install or even know about JVM, SBT or an
 This makes TSK-powered scripts ideal for situations in which Scala would be normally rejected because of the installation complexity
 and set up overhead.
 
+<div align="center">
 ![](doc/img/simple-demo.gif)
+</div>
 
 ## Example
 
 Say you've got some unstructured text file containing URL addresses and that you need to extract unique URLs.
-Maybe you thought about using grep for that - but on a closer inspection URLs are quite involved beasts!
+Maybe you thought of using grep for that - but on a closer inspection URLs are quite involved beasts!
 With all the query parameters, escaping etc. the regular expression may be difficult to get right
 (let alone the readability of the end result). You would be better off using some proper URL validation method,
-as typically found in programming languages. Ideally the programming language would be suitable for scripting,
-so it's straightforward to write and run a program without having to fight tooling / dependencies.
+as typically found in programming languages. Ideally the language would be suitable for scripting,
+so it'd be straightforward to write and run a program without you (and your users) having to fight tooling / dependencies.
 
 
-Luckily Scala is one of the languages in which URL validation is available within the standard library
-(via Java SDK) and with help of this project it is well suited for scripting as well. You can make a runnable
+Luckily Scala is one of the languages in which URL validation is available (within the standard library via Java SDK)
+and with help of this project it is well suited for scripting as well. You can make a runnable
 URLGrep script using Scala and TSK in a couple of minutes by following the steps below:
 
 1. Save the following snippet into `URLGrep.scala` file:
@@ -79,23 +81,26 @@ The same for Docker containers - as long the image has `curl` / `wget`, your pro
 The above example is meant to whet your appetite by demonstrating some useful basics,
 but the real fun begins with external libraries that can come from both public and company-private repositories.
 
-Make sure you glance over the features section and also see [the wiki](https://github.com/tsk-tsk/tsk-tsk/wiki) for more examples.
+Make sure you glance over the features section and also see [the wiki](https://github.com/tsk-tsk/tsk-tsk/wiki) for 
+some guidance and explanations that go into more detail.
+You can also play with the attached [examples](https://github.com/tsk-tsk/tsk-tsk/tree/trunk/examples) to see
+various features of TSK in action.
 
 ## Main features
 
-- Minimal prerequisites - apart from a working internet connection you only need `wget` or `curl`.
 - The simplest possible workflow: you write the script, and you make it executable. That's it.
 The initial script run downloads those of the required dependencies that don't exist on the machine yet.
+- All Scala and Java libraries available, as long they are in some Maven or Ivy repository (internal corporate
+repositories requiring credentials and/or proxies are supported as well - use your in-house components in your scripts)
 - Regular Scala, without any syntax that'd confuse standard tooling (editable without red squiggles in IntelliJ IDEA).
-When your script grows somewhat, but not to a degree when it'd need a full-blown project, split it into separate files
-with all Scala constructs (like packages) working as expected
-- Use all Scala and Java libraries you need or want, as long they are in a maven or ivy repository (internal corporate
-repositories requiring credentials and/or proxies are supported as well)
-- support for:
+  When your script grows somewhat, but not to a degree when it'd need a full-blown project, split it into separate files
+  with all Scala constructs (like packages) working as expected
+- Minimal prerequisites - apart from a working internet connection you only need `wget` or `curl`.
+- Support for:
   - macOS (tested on AppVeyor, also had some positive user reports)
   - fresh Docker images of the following Linux distributions:
-    - out of the box: alpine, archlinux, fedora (they've got `curl` / `wget`)
-    - after you install `curl`: debian, ubuntu
+    - [Alpine](https://www.alpinelinux.org/), [Arch Linux](https://archlinux.org/), [Fedora](https://getfedora.org/) out of the box (they've got `curl` / `wget`)
+    - [Debian](https://www.debian.org/), [Ubuntu](https://ubuntu.com/) after you install `curl`
   - most likely your Linux distribution even without root permissions as long you've installed `curl` or `wget`
 - Experimental support for Ammonite scripts (use `run_with_ammonite` instead of `run`)
 
@@ -103,7 +108,7 @@ repositories requiring credentials and/or proxies are supported as well)
 
 - Customizable JVM version (at the time 1.8 is used)
 - Easy migration to a full-blown Scala project when the script grows.
-The script is valid Scala so the existing tooling handles it perfectly well - the TSK-specific parts are hidden
+The script is valid Scala, so the existing tooling handles it perfectly well - the TSK-specific parts are hidden
 from the Scala compiler within the Scala comment block. TSK will be able to generate SBT and Mill projects
 - Robust error handling
 
@@ -111,15 +116,15 @@ from the Scala compiler within the Scala comment block. TSK will be able to gene
 
 TSK stands on the shoulders of giants. Kudos to all authors and contributors of the following technologies:
 
-- Scala, which is my favorite programming language
-- Ammonite, the best Scala REPL, which also pioneered Scala scripting capabilities
-- Coursier, which made it super-easy to manage Scala and Java dependencies
-- Bloop, which provides great compilation and IDE interoperation features
+- [Scala](https://www.scala-lang.org/), which is my favorite programming language
+- [Ammonite](http://ammonite.io/) - the best Scala REPL, which also pioneered Scala scripting capabilities
+- [Coursier](https://get-coursier.io/), which made it super-easy to manage Scala and Java dependencies
+- [Bloop](https://scalacenter.github.io/bloop/), which provides great compilation and IDE interoperation features
 - Unix, with fantastic scripting capabilities
 
 ## Special thanks
 
-- To that ScalaPolis2016 attendee, who noticed, that it's possible for a file to be both valid Scala and valid shell.
-- To those of the ScalaPolis2016 and FunctionalTricity 28.04.2016 attendees, who have appreciated my points and to those who made fun of them.
-I enjoyed our conversations very much :)
-- To the wonderful organizers of the mentioned events for having me and for still wanting me to speak! ;)
+- To that [ScalaPolis2016](https://web.archive.org/web/20170606154012/http://konf.scalapolis.pl/#slot3) attendee, who noticed, that it's possible for a file to be both valid Scala and valid shell.
+- To those of the [ScalaPolis2016](https://web.archive.org/web/20170606154012/http://konf.scalapolis.pl/#slot3) and [FunctionalTricity 28.04.2016](https://www.meetup.com/FunctionalTricity/photos/26928835/449436348/) attendees, who have appreciated my points and to those who made fun of them.
+I enjoyed our conversations very much :smile:
+- To the wonderful organizers of the mentioned events for having me and for still wanting me to speak! :wink:
