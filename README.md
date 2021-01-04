@@ -57,11 +57,14 @@ object URLGrep {
 
 }
 ```
-2. Set the executable bit: `chmod +x URLGrep.scala`
-
-Voilà! Your script is ready for running. Pipe some text to its standard input to try it out:
+2. Set the executable bit:
 ```shell
-echo something something http://google.com | ./URLGrep.scala
+chmod +x URLGrep.scala
+```
+
+Voilà! Your script is good to go. Pipe some text to its standard input to try it out:
+```shell
+echo "something something http://google.com" | ./URLGrep.scala
 curl https://scala-lang.org | ./URLGrep.scala
 ```
 
