@@ -444,7 +444,7 @@ log_sink() {
       tee -a "${tsk_log}" > /dev/null;;
     "just_progress")
       local log_level="${1}"
-      local log_target="$([ "${log_level}" == "progress" ] && echo "/dev/stderr" || echo "/dev/null")"
+      local log_target="$([ "${log_level}" = "progress" ] && echo "/dev/stderr" || echo "/dev/null")"
       tee -a "${tsk_log}" "${log_target}" > /dev/null;;
     "true")
       tee -a "${tsk_log}" /dev/stderr > /dev/null;;
