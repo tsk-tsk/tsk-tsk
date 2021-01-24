@@ -397,7 +397,7 @@ EOF
 prepare_for_running_with_bloop() {
   install_coursier          || (fatal "could not install Coursier"; return 1)
   install_bloop             || (fatal "could not install Bloop"; return 1)
-  mkdir -p "${bloop_dir}"
+  mkdir -p "${bloop_dir}"   || (fatal "could not create .bloop directory"; return 1)
   generate_bloop_config     || (fatal "could not generate Bloop configuration"; return 1)
   PATH="$(p_with_custom_java)" "${bloop_cmd}" compile \
     --config-dir "${script_dir}/.bloop" \
