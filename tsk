@@ -51,12 +51,12 @@ bloop_version="${bloop_version:-2.12:1.4.4-2-f9fd96b8}"
 # ---------------------------------------
 tsk_log="${tsk_log:-${TMPDIR:-"/tmp"}/tsk-$$.log}"
 
-log() {
+perr() {
   >&2 echo "$@"
 }
 
 fatal() {
-  log "FATAL ERROR: $*"
+  perr "FATAL ERROR: $*"
 }
 
 # "Safe sourcing" is the current answer to the question:
@@ -176,7 +176,7 @@ cs_fetch() {
 
 install_coursier() {
   [ -e "$cs_binary" ] && return 0;
-  log "installing coursier"
+  perr "installing coursier"
   cs_url_prefix="https://github.com/coursier/coursier/releases/download/${coursier_version}"
   case "${os}" in
     "Linux")
@@ -200,7 +200,7 @@ install_coursier() {
     "Darwin")
       cs_url="${cs_url_prefix}/cs-x86_64-apple-darwin";;
     *)
-      log "Platform [${os}] is not officially supported (yet?)"
+      perr "Platform [${os}] is not officially supported (yet?)"
       cs_url="${cs_url_prefix}/coursier"
       command -v java || (fatal "Unknown system: ${os} and no java present. Please install java first"; return 1)
   esac
@@ -214,7 +214,7 @@ coursier_cache_dir="$( [ "${os}" = "Darwin" ] && echo "${coursier_cache_dir_on_D
 
 install_bloop() {
   [ -e "${bloop_cmd}" ] && return 0;
-  log "installing bloop"
+  perr "installing bloop"
   # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
   # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
   PATH="$(p_with_custom_java)" ${cs_cmd} bootstrap "ch.epfl.scala:bloopgun_${bloop_version}" --standalone -o "${bloop_cmd}"
@@ -302,7 +302,7 @@ EOF
 }
 
 fetch_all_dependencies() {
-    log "fetching all dependencies"
+    perr "fetching all dependencies"
     # shellcheck disable=SC2086
     # (all dependencies need to be passed space-separated so shell word splitting is fine here)
     cs_fetch --sources --javadoc --default ${core_deps} ${dependencies} --json-output-file "${cs_fetch_result}" > /dev/null
@@ -315,7 +315,7 @@ generate_bloop_config() {
     true
   else
     fetch_all_dependencies
-    log "generating bloop config"
+    perr "generating bloop config"
     bloop_config_template > "${bloop_module_config}"
   fi
 }
