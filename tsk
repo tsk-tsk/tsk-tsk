@@ -55,7 +55,7 @@ perr() {
   >&2 echo "$@"
 }
 
-fatal() {
+perr_fatal() {
   perr "FATAL ERROR: $*"
 }
 
@@ -93,7 +93,7 @@ safely_source() {
 # The alternative way of sourcing the TSK (~/.tsk/tsk-x.y.z Foo.scala)
 # mainly serves debugging purposes as you are able to check output of the individual functions
 script_file="$(echo "$0" | grep -q '\.sca\?l\?a\?$' && echo "${0}" || echo "${1}")"
-[ -e "${script_file}" ] || (fatal \
+[ -e "${script_file}" ] || (perr_fatal \
   "tsk must be sourced in one of two supported ways:
 1) from within a *.scala/*.sc file (normal operation) or
 2) with a *.scala/*.sc file argument (. ~/.tsk/tsk-x.y.z Foo.scala) - for debugging
@@ -108,7 +108,7 @@ fi
 sources="${sources:-${script_file}}"
 
 get_abs_script_dir() {
-  cd "${script_dir}" || (fatal "Can't cd to the script directory, symbolic links not supported (yet?)"; return 1)
+  cd "${script_dir}" || (perr_fatal "Can't cd to the script directory, symbolic links not supported (yet?)"; return 1)
   pwd -P
 }
 
@@ -190,7 +190,7 @@ install_coursier() {
             then
               apk update && apk add openjdk8-jre
             else
-              fatal "No java present and no root user, which could install it"; return 1
+              perr_fatal "No java present and no root user, which could install it"; return 1
             fi
           fi
           cs_url="${cs_url_prefix}/coursier";;
@@ -202,7 +202,7 @@ install_coursier() {
     *)
       perr "Platform [${os}] is not officially supported (yet?)"
       cs_url="${cs_url_prefix}/coursier"
-      command -v java || (fatal "Unknown system: ${os} and no java present. Please install java first"; return 1)
+      command -v java || (perr_fatal "Unknown system: ${os} and no java present. Please install java first"; return 1)
   esac
   ${download_as} "$cs_binary" "$cs_url"
   chmod +x "$cs_binary"
@@ -395,13 +395,13 @@ EOF
 }
 
 prepare_for_running_with_bloop() {
-  install_coursier          || (fatal "could not install Coursier"; return 1)
-  install_bloop             || (fatal "could not install Bloop"; return 1)
-  mkdir -p "${bloop_dir}"   || (fatal "could not create .bloop directory"; return 1)
-  generate_bloop_config     || (fatal "could not generate Bloop configuration"; return 1)
+  install_coursier          || (perr_fatal "could not install Coursier"; return 1)
+  install_bloop             || (perr_fatal "could not install Bloop"; return 1)
+  mkdir -p "${bloop_dir}"   || (perr_fatal "could not create .bloop directory"; return 1)
+  generate_bloop_config     || (perr_fatal "could not generate Bloop configuration"; return 1)
   PATH="$(p_with_custom_java)" "${bloop_cmd}" compile \
     --config-dir "${script_dir}/.bloop" \
-    "${module}" || (fatal "Error while compiling with Bloop"; return 1)
+    "${module}" || (perr_fatal "Error while compiling with Bloop"; return 1)
 }
 
 script_classpath() {
