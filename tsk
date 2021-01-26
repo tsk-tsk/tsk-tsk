@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# variables and functions designed to be overridden by the user
+# Variables and functions designed to be overridden by the user
 # -------------------------------------------------------------
 
-# version of Scala to be used in compilation and in resolution of libraries
+# Version of Scala to be used in compilation and in resolution of libraries
 scala_version="${scala_version:-2.12.12}"
 
 # Source files/directories
@@ -37,13 +37,19 @@ main_class="${main_class:-}"
 # - true - output all diagnostic information to the standard error in the real time
 verbose="${verbose:-just_progress}"
 
-# version of Coursier, the workhorse for JVM and library fetching
+# Version of Coursier, the workhorse for JVM and library fetching
 coursier_version="${coursier_version:-v2.0.0}"
 
-# version of Bloop, a fast and well-integrated Scala compilation tool
+# Version of Java Virtual Machine, necessary to launch Bloop and (after compilation) the script itself
+java_version="${java_version:-8}"
+
+# Version of Java used at Alpine in order to bootstrap Coursier
+java_alpine="${java_alpine:-openjdk8-jre}"
+
+# Version of Bloop, a fast and well-integrated Scala compilation tool
 bloop_version="${bloop_version:-2.12:1.4.4-2-f9fd96b8}"
 
-# variables and functions internal to tsk
+# Variables and functions internal to tsk
 # ---------------------------------------
 tsk_log="${tsk_log:-${TMPDIR:-"/tmp"}/tsk-$$.log}"
 
@@ -157,7 +163,7 @@ get_sha_sum() {
   fi
 }
 p_with_custom_java() {
-  echo "$( ${cs_cmd} java-home --jvm 8 )/bin:${PATH}"
+  echo "$( ${cs_cmd} java-home --jvm "${java_version}" )/bin:${PATH}"
 }
 download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
 module="$( basename "${script_file}" | sed 's/\.scala//g' )"
@@ -189,6 +195,12 @@ cs_fetch() {
     "$@"
 }
 
+install_java() {
+  ${cs_cmd} java-home --jvm "${java_version}" --mode offline > /dev/null 2>&1 && return 0;
+  echo "Installing Java Virtual Machine"
+  ${cs_cmd} java-home --jvm "${java_version}" --progress 2>&1 > /dev/null | log_as progress
+}
+
 install_coursier() {
   [ -e "$cs_binary" ] && return 0;
   cs_url_prefix="https://github.com/coursier/coursier/releases/download/${coursier_version}"
@@ -203,7 +215,7 @@ install_coursier() {
             if [ "$(whoami)" = "root" ]
             then
               echo "Installing Java for Coursier" | log_as progress
-              { apk update && apk add openjdk8-jre; } 2>&1 | log_as progress
+              { apk update && apk add "${java_alpine}"; } 2>&1 | log_as progress
             else
               log_fatal "No java present and no root user, which could install it"; return 1
             fi
@@ -318,7 +330,9 @@ EOF
 }
 
 fetch_all_dependencies() {
-    log_debug "Fetching all dependencies"
+    cs_fetch --sources --javadoc --default --progress \
+      ${core_deps} ${dependencies} --mode offline > /dev/null 2>&1 && return 0;
+    echo "Fetching all libraries the script depends upon" | log_as progress
     # shellcheck disable=SC2086
     # (all dependencies need to be passed space-separated so shell word splitting is fine here)
     # shellcheck disable=SC2069
@@ -415,6 +429,7 @@ EOF
 
 prepare_for_running_with_bloop() {
   install_coursier          || (log_fatal "Could not install Coursier"; return 1)
+  install_java              || (log_fatal "Could not install Java Virtual Machine"; return 1)
   install_bloop             || (log_fatal "Could not install Bloop"; return 1)
   mkdir -p "${bloop_dir}"   || (log_fatal "Could not create .bloop directory"; return 1)
   generate_bloop_config     || (log_fatal "Could not generate Bloop configuration"; return 1)
@@ -457,6 +472,12 @@ exec_java() {
   PATH="$(p_with_custom_java)" exec java -cp "$(script_classpath)" ${JAVA_OPTS:-} "$(get_main_class)" "$@"
 }
 
+install_ammonite() {
+  ${cs_cmd} fetch ammonite --mode offline > /dev/null 2>&1 && return 0
+  echo "Installing Ammonite" | log_as progress
+  ${cs_cmd} fetch ammonite --progress 2>&1 > /dev/null | log_as progress
+}
+
 exec_ammonite() {
   PATH="$(p_with_custom_java)" exec ${cs_cmd} launch ammonite -- "${script_file}" "$@"
 }
@@ -467,7 +488,7 @@ show_log_and_quit() {
     >&2 echo
     >&2 echo Full log:
     >&2 echo ---------
-    cat "${tsk_log}" >&2
+    >&2 cat "${tsk_log}"
   fi
   rm "${tsk_log}"
   exec false
@@ -488,7 +509,7 @@ run() {
 
 run_with_ammonite() {
   set -o pipefail
-  if install_coursier
+  if install_coursier && install_ammonite
   then
     rm "${tsk_log}"
     eval "$(printf "%s" "exec_ammonite $(
