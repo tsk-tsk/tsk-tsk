@@ -106,11 +106,11 @@ repositories requiring credentials and/or proxies are supported as well - use yo
 
 ## Planned features
 
-- Customizable JVM version (at the time 1.8 is used)
 - Easy migration to a full-blown Scala project when the script grows.
 The script is valid Scala, so the existing tooling handles it perfectly well - the TSK-specific parts are hidden
 from the Scala compiler within the Scala comment block. TSK will be able to generate SBT and Mill projects
-- Robust error handling
+- Compilation of the script to a native binary (with GraalVM) to reduce the script's memory footprint and startup time
+- Robust handling of errors made in the shell part (preamble)
 
 ## Acknowledgements
 
