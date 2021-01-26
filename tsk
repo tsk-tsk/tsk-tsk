@@ -47,12 +47,31 @@ bloop_version="${bloop_version:-2.12:1.4.4-2-f9fd96b8}"
 # ---------------------------------------
 tsk_log="${tsk_log:-${TMPDIR:-"/tmp"}/tsk-$$.log}"
 
-perr() {
-  >&2 echo "$@"
+fatal_error() {
+  >&2 echo "FATAL ERROR: $*"
 }
 
-perr_fatal() {
-  perr "FATAL ERROR: $*"
+log_as() {
+  case "${verbose}" in
+    "false")
+      tee -a "${tsk_log}" > /dev/null;;
+    "just_progress")
+      local log_level="${1}"
+      local log_target="$([ "${log_level}" = "progress" ] && echo "/dev/stderr" || echo "/dev/null")"
+      tee -a "${tsk_log}" "${log_target}" > /dev/null;;
+    "true")
+      tee -a "${tsk_log}" /dev/stderr > /dev/null;;
+    *)
+      tee -a "${tsk_log}" /dev/stderr > /dev/null;;
+  esac
+}
+
+log_fatal() {
+  echo "FATAL ERROR: $*" | log_as fatal
+}
+
+log_debug() {
+  echo "$*" | log_as debug
 }
 
 # "Safe sourcing" is the current answer to the question:
@@ -89,7 +108,7 @@ safely_source() {
 # The alternative way of sourcing the TSK (~/.tsk/tsk-x.y.z Foo.scala)
 # mainly serves debugging purposes as you are able to check output of the individual functions
 script_file="$(echo "$0" | grep -q '\.sca\?l\?a\?$' && echo "${0}" || echo "${1}")"
-[ -e "${script_file}" ] || (perr_fatal \
+[ -e "${script_file}" ] || (fatal_error \
   "tsk must be sourced in one of two supported ways:
 1) from within a *.scala/*.sc file (normal operation) or
 2) with a *.scala/*.sc file argument (. ~/.tsk/tsk-x.y.z Foo.scala) - for debugging
@@ -104,7 +123,7 @@ fi
 sources="${sources:-${script_file}}"
 
 get_abs_script_dir() {
-  cd "${script_dir}" || (perr_fatal "Can't cd to the script directory, symbolic links not supported (yet?)"; return 1)
+  cd "${script_dir}" || (fatal_error "Can't cd to the script directory, symbolic links not supported (yet?)"; return 1)
   pwd -P
 }
 
@@ -172,7 +191,6 @@ cs_fetch() {
 
 install_coursier() {
   [ -e "$cs_binary" ] && return 0;
-  perr "installing coursier"
   cs_url_prefix="https://github.com/coursier/coursier/releases/download/${coursier_version}"
   case "${os}" in
     "Linux")
@@ -180,13 +198,14 @@ install_coursier() {
         "libc.musl")
           # Coursier isn't compiled against libc.musl yet (Alpine uses it), need to either have java already
           # or to have root permissions
-          if ! command -v java
+          if ! command -v java > /dev/null
           then
             if [ "$(whoami)" = "root" ]
             then
-              apk update && apk add openjdk8-jre
+              echo "Installing Java for Coursier" | log_as progress
+              { apk update && apk add openjdk8-jre; } 2>&1 | log_as progress
             else
-              perr_fatal "No java present and no root user, which could install it"; return 1
+              log_fatal "No java present and no root user, which could install it"; return 1
             fi
           fi
           cs_url="${cs_url_prefix}/coursier";;
@@ -196,11 +215,11 @@ install_coursier() {
     "Darwin")
       cs_url="${cs_url_prefix}/cs-x86_64-apple-darwin";;
     *)
-      perr "Platform [${os}] is not officially supported (yet?)"
       cs_url="${cs_url_prefix}/coursier"
-      command -v java || (perr_fatal "Unknown system: ${os} and no java present. Please install java first"; return 1)
+      command -v java || (log_fatal "Unknown system: ${os} and no java present. Please install java first"; return 1)
   esac
-  ${download_as} "$cs_binary" "$cs_url"
+  echo "Installing Coursier" | log_as progress
+  ${download_as} "$cs_binary" "$cs_url" 2>&1 | log_as progress
   chmod +x "$cs_binary"
 }
 
@@ -210,10 +229,11 @@ coursier_cache_dir="$( [ "${os}" = "Darwin" ] && echo "${coursier_cache_dir_on_D
 
 install_bloop() {
   [ -e "${bloop_cmd}" ] && return 0;
-  perr "installing bloop"
+  echo "Installing Bloop" | log_as progress
   # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
   # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
-  PATH="$(p_with_custom_java)" ${cs_cmd} bootstrap "ch.epfl.scala:bloopgun_${bloop_version}" --standalone -o "${bloop_cmd}"
+  PATH="$(p_with_custom_java)" ${cs_cmd} bootstrap \
+    "ch.epfl.scala:bloopgun_${bloop_version}" --standalone -o "${bloop_cmd}" 2>&1 | log_as progress
 }
 
 build_inputs_sha() {
@@ -298,10 +318,13 @@ EOF
 }
 
 fetch_all_dependencies() {
-    perr "fetching all dependencies"
+    log_debug "Fetching all dependencies"
     # shellcheck disable=SC2086
     # (all dependencies need to be passed space-separated so shell word splitting is fine here)
-    cs_fetch --sources --javadoc --default ${core_deps} ${dependencies} --json-output-file "${cs_fetch_result}" > /dev/null
+    # shellcheck disable=SC2069
+    # (we want to pipe stderr alone, discarding stdout)
+    cs_fetch --sources --javadoc --default --progress \
+      ${core_deps} ${dependencies} --json-output-file "${cs_fetch_result}" 2>&1 > /dev/null | log_as progress
 }
 
 generate_bloop_config() {
@@ -310,8 +333,8 @@ generate_bloop_config() {
     # good, config can stay
     true
   else
-    fetch_all_dependencies
-    perr "generating bloop config"
+    fetch_all_dependencies || return 1
+    log_debug "Generating Bloop config"
     bloop_config_template > "${bloop_module_config}"
   fi
 }
@@ -391,13 +414,13 @@ EOF
 }
 
 prepare_for_running_with_bloop() {
-  install_coursier          || (perr_fatal "could not install Coursier"; return 1)
-  install_bloop             || (perr_fatal "could not install Bloop"; return 1)
-  mkdir -p "${bloop_dir}"   || (perr_fatal "could not create .bloop directory"; return 1)
-  generate_bloop_config     || (perr_fatal "could not generate Bloop configuration"; return 1)
+  install_coursier          || (log_fatal "Could not install Coursier"; return 1)
+  install_bloop             || (log_fatal "Could not install Bloop"; return 1)
+  mkdir -p "${bloop_dir}"   || (log_fatal "Could not create .bloop directory"; return 1)
+  generate_bloop_config     || (log_fatal "Could not generate Bloop configuration"; return 1)
   PATH="$(p_with_custom_java)" "${bloop_cmd}" compile \
     --config-dir "${script_dir}/.bloop" \
-    "${module}" || (perr_fatal "Error while compiling with Bloop"; return 1)
+    "${module}" 2>&1 | log_as progress || (fatal_error "Error while compiling with Bloop"; return 1)
 }
 
 script_classpath() {
@@ -438,48 +461,41 @@ exec_ammonite() {
   PATH="$(p_with_custom_java)" exec ${cs_cmd} launch ammonite -- "${script_file}" "$@"
 }
 
-log_sink() {
-  case "${verbose}" in
-    "false")
-      tee -a "${tsk_log}" > /dev/null;;
-    "just_progress")
-      local log_level="${1}"
-      local log_target="$([ "${log_level}" = "progress" ] && echo "/dev/stderr" || echo "/dev/null")"
-      tee -a "${tsk_log}" "${log_target}" > /dev/null;;
-    "true")
-      tee -a "${tsk_log}" /dev/stderr > /dev/null;;
-    *)
-      tee -a "${tsk_log}" /dev/stderr > /dev/null;;
-  esac
+show_log_and_quit() {
+  if [ "${verbose}" != "true" ]
+  then
+    >&2 echo
+    >&2 echo Full log:
+    >&2 echo ---------
+    cat "${tsk_log}" >&2
+  fi
+  rm "${tsk_log}"
+  exec false
 }
 
 run() {
   set -o pipefail
-  if (prepare_for_running_with_bloop 2>&1 | log_sink progress)
+  if prepare_for_running_with_bloop
   then
     rm "${tsk_log}"
     eval "$(printf "%s" "exec_java $(
       seq "${argc}" | awk '{printf "\"$arg_" $1 "\" "}'
     )")"
   else
-    [ "${verbose}" != "true" ] && cat "${tsk_log}" >&2
-    rm "${tsk_log}"
-    exec false
+    show_log_and_quit
   fi
 }
 
 run_with_ammonite() {
   set -o pipefail
-  if (install_coursier 2>&1 | log_sink  progress)
+  if install_coursier
   then
     rm "${tsk_log}"
     eval "$(printf "%s" "exec_ammonite $(
       seq "${argc}" | awk '{printf "\"$arg_" $1 "\" "}'
     )")"
   else
-    [ "${verbose}" != "true" ] && cat "${tsk_log}" >&2
-    rm "${tsk_log}"
-    exec false
+    show_log_and_quit
   fi
 }
 
