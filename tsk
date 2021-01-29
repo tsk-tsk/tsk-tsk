@@ -197,7 +197,7 @@ cs_fetch() {
 
 install_java() {
   ${cs_cmd} java-home --jvm "${java_version}" --mode offline > /dev/null 2>&1 && return 0;
-  echo "Installing Java Virtual Machine"
+  echo "Installing Java Virtual Machine" | log_as progress
   ${cs_cmd} java-home --jvm "${java_version}" --progress 2>&1 > /dev/null | log_as progress
 }
 
