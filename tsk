@@ -6,6 +6,8 @@
 # Version of Scala to be used in compilation and in resolution of libraries
 scala_version="${scala_version:-2.12.13}"
 
+scala_major_minor="$(echo "${scala_version}" | sed 's/\([0-9]*\.[0-9]*\)\..*/\1/g')"
+
 # Source files/directories
 # if not set explicitly, it's being set to ${script_file} further down
 # (by default only the main script belongs to the sources)
@@ -280,7 +282,7 @@ bloop_config_template() {
             "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar"
         ],
         "out": "${abs_script_dir}/.bloop/${module}",
-        "classesDir": "${abs_script_dir}/.bloop/${module}/scala-2.12/classes",
+        "classesDir": "${abs_script_dir}/.bloop/${module}/scala-${scala_major_minor}/classes",
         "resources": [],
         "scala": {
             "organization": "org.scala-lang",
@@ -293,10 +295,10 @@ bloop_config_template() {
                 "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/scala-library/${scala_version}/scala-library-${scala_version}.jar",
                 "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/${scala_version}/scala-compiler-${scala_version}.jar",
                 "${coursier_cache_dir}/https/repo1.maven.org/maven2/jline/jline/2.14.6/jline-2.14.6.jar",
-                "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_2.12/1.0.6/scala-xml_2.12-1.0.6.jar",
+                "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_${scala_major_minor}/1.0.6/scala-xml_${scala_major_minor}-1.0.6.jar",
                 "${coursier_cache_dir}/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/${scala_version}/scala-reflect-${scala_version}.jar"
             ],
-            "analysis": "${abs_script_dir}/.bloop/${module}/inc_compile_2.12.zip",
+            "analysis": "${abs_script_dir}/.bloop/${module}/inc_compile_${scala_major_minor}.zip",
             "setup": {
                 "order": "mixed",
                 "addLibraryToBootClasspath": true,
