@@ -4,7 +4,7 @@
 # -------------------------------------------------------------
 
 # Version of Scala to be used in compilation and in resolution of libraries
-scala_version="${scala_version:-2.12.12}"
+scala_version="${scala_version:-2.12.13}"
 
 # Source files/directories
 # if not set explicitly, it's being set to ${script_file} further down
@@ -38,7 +38,7 @@ main_class="${main_class:-}"
 verbose="${verbose:-just_progress}"
 
 # Version of Coursier, the workhorse for JVM and library fetching
-coursier_version="${coursier_version:-v2.0.0}"
+coursier_version="${coursier_version:-v2.0.8}"
 
 # Version of Java Virtual Machine, necessary to launch Bloop and (after compilation) the script itself
 java_version="${java_version:-8}"
@@ -47,7 +47,7 @@ java_version="${java_version:-8}"
 java_alpine="${java_alpine:-openjdk8-jre}"
 
 # Version of Bloop, a fast and well-integrated Scala compilation tool
-bloop_version="${bloop_version:-2.12:1.4.4-2-f9fd96b8}"
+bloop_version="${bloop_version:-2.12:1.4.6}"
 
 # Variables and functions internal to tsk
 # ---------------------------------------
