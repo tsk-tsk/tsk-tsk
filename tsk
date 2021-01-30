@@ -331,7 +331,7 @@ EOF
 
 fetch_all_dependencies() {
     cs_fetch --sources --javadoc --default --progress \
-      ${core_deps} ${dependencies} --mode offline > /dev/null 2>&1 && return 0;
+      ${core_deps} ${dependencies} --json-output-file "${cs_fetch_result}" --mode offline > /dev/null 2>&1 && return 0;
     echo "Fetching all libraries the script depends upon" | log_as progress
     # shellcheck disable=SC2086
     # (all dependencies need to be passed space-separated so shell word splitting is fine here)
