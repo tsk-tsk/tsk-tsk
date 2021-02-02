@@ -27,6 +27,40 @@ and set up overhead.
 <img src="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/trunk/doc/img/simple-demo.gif" alt="demo">
 </div>
 
+## Use TSK when
+  - you've done your exploration with Ammonite / Polynote / Worksheets / Scala Fiddle / Scastie
+    and want to put your findings into work
+  - you want the result quickly: going for a proper build tool would be an overkill at this stage
+  - but at the same time you want full IDE support and good development experience
+  - you want the script to be useful not only to you, or to your Scala developer colleagues, but also to those
+    data science and Python experts next door, who may not really know (or care for) JVM, Scala or related tooling
+  - you don't want to have to care if the target system (colleague's laptop, CI server, Kubernetes pod)
+    has everything installed already
+
+So TSK will be great for:
+  - that small script you will use to automate the common task in your company, especially if the users are
+    not really into the JVM / Scala world
+  - the actually-runnable example code that demonstrates features of your library
+  - that little diagnostic program that you'll run inside a problematic Kubernetes pod
+    to figure out what's happening
+  - that quick prototype that you want to experiment with, before deciding if it would pay off to invest into a proper
+    build configuration, CI setup and other software-engineery things like that
+  - that small Scala program you want to play with while learning Scala features, before you decide to learn about
+    JVMs, build tools and other distractions
+    
+## Don't use TSK when
+  - you just want to play with Scala syntax, to explore some individual API methods, to test some smaller components,
+    to perform some quick computations: for these purposes use any of the great Scala exploratory tools like
+    Ammonite REPL, Polynote, Scala Worksheets, Scala Fiddle, Scastie
+  - you're starting a new project that you already know is going to be a bigger thing, in that case go straight for a
+    proper build tool, like SBT or Mill
+  - you want to rely on features of build tools, like compiler plugins, custom warning settings, multi-projects,
+    test frameworks, code coverage measurements, etc.
+  - you don't mind spending an extra effort to provide the best possible experience for your end users: in that case
+    use the respective system's package management software or provide an appropriate platform-dependent installer
+    like IntelliJ IDEA has
+  - or, in general, when other Scala tools work well for your use-cases already
+
 ## Example
 
 Say you've got some unstructured text file containing URL addresses and that you need to extract unique URLs.
@@ -70,8 +104,8 @@ echo "something something http://google.com" | ./URLGrep.scala
 curl https://scala-lang.org | ./URLGrep.scala
 ```
 
-The first run may take quite long because TSK needs to download several dependencies in the background first.
-Depending on the internet connection it may be even a couple of minutes. The second and next runs will be quick, because
+The first run will take quite long (maybe even a couple of minutes) because TSK needs to download
+several dependencies in the background first. The second and next runs will be quick, because
 everything is cached on disk already.
 
 One nice thing is that no matter on which Linux or Mac system you run it, it will work, as long they have `curl` or `wget` installed.
