@@ -51,14 +51,14 @@ So TSK will be great for:
 ## Don't use TSK when
   - you just want to play with Scala syntax, to explore some individual API methods, to test some smaller components,
     to perform some quick computations: for these purposes use any of the great Scala exploratory tools like
-    Ammonite REPL, Polynote, Scala Worksheets, Scala Fiddle, Scastie
+    [Ammonite REPL](http://ammonite.io/#Ammonite-REPL), [Polynote](https://polynote.org/), [Scala Worksheets](https://www.jetbrains.com/help/idea/work-with-scala-worksheet-and-ammonite.html#worksheet_actions), [Scala Fiddle](https://scalafiddle.io/), [Scastie](https://scastie.scala-lang.org/)
   - you're starting a new project that you already know is going to be a bigger thing, in that case go straight for a
-    proper build tool, like SBT or Mill
+    proper build tool, like [SBT](https://www.scala-sbt.org/) or [Mill](http://www.lihaoyi.com/mill/)
   - you want to rely on features of build tools, like compiler plugins, custom warning settings, multi-projects,
     test frameworks, code coverage measurements, etc.
   - you don't mind spending an extra effort to provide the best possible experience for your end users: in that case
     use the respective system's package management software or provide an appropriate platform-dependent installer
-    like IntelliJ IDEA has
+    like [IntelliJ IDEA](https://www.jetbrains.com/idea/download/) has
   - or, in general, when other Scala tools work well for your use-cases already
 
 ## Example
@@ -143,7 +143,7 @@ repositories requiring credentials and/or proxies are supported as well - use yo
 - Easy migration to a full-blown Scala project when the script grows.
 The script is valid Scala, so the existing tooling handles it perfectly well - the TSK-specific parts are hidden
 from the Scala compiler within the Scala comment block. TSK will be able to generate SBT and Mill projects
-- Compilation of the script to a native binary (with GraalVM) to reduce the script's memory footprint and startup time
+- Compilation of your script to a native binary (with GraalVM) to reduce the script's memory footprint and startup time
 - Robust handling of errors made in the shell part (preamble)
 
 ## Acknowledgements
