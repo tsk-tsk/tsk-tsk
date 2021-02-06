@@ -28,10 +28,11 @@ and set up overhead.
 </div>
 
 ## Use TSK when
-  - you've done your exploration with Ammonite / Polynote / Worksheets / Scala Fiddle / Scastie
+  - you've done your exploration with [Ammonite REPL](http://ammonite.io/#Ammonite-REPL), [Polynote](https://polynote.org/), [Scala Worksheets](https://www.jetbrains.com/help/idea/work-with-scala-worksheet-and-ammonite.html#worksheet_actions), [Scala Fiddle](https://scalafiddle.io/), [Scastie](https://scastie.scala-lang.org/)
     and want to put your findings into work
   - you want the result quickly: going for a proper build tool would be an overkill at this stage
   - but at the same time you want full IDE support and good development experience
+  - you want it to be easy to switch your code to a proper build tool later
   - you want the script to be useful not only to you, or to your Scala developer colleagues, but also to those
     data science and Python experts next door, who may not really know (or care for) JVM, Scala or related tooling
   - you don't want to have to care if the target system (colleague's laptop, CI server, Kubernetes pod)
