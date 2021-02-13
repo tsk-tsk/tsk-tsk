@@ -501,7 +501,7 @@ show_log_and_quit() {
     >&2 echo ---------
     >&2 cat "${tsk_log}"
   fi
-  rm "${tsk_log}"
+  rm "${tsk_log}" 2> /dev/null
   exec false
 }
 
@@ -509,7 +509,7 @@ run() {
   set -o pipefail
   if prepare_for_running_with_bloop
   then
-    rm "${tsk_log}"
+    rm "${tsk_log}" 2> /dev/null
     eval "$(printf "%s" "exec_java $(
       seq "${argc}" | awk '{printf "\"$arg_" $1 "\" "}'
     )")"
@@ -522,7 +522,7 @@ run_with_ammonite() {
   set -o pipefail
   if install_coursier && install_ammonite
   then
-    rm "${tsk_log}"
+    rm "${tsk_log}" 2> /dev/null
     eval "$(printf "%s" "exec_ammonite $(
       seq "${argc}" | awk '{printf "\"$arg_" $1 "\" "}'
     )")"
