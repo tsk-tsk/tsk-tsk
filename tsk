@@ -100,11 +100,14 @@ safely_source() {
     for cmd in . source cat curl wget sh
       do echo "alias $cmd=true"; done
     for cmd in . run_with_ammonite run package import object case class trait implicit private
-      do echo "alias $cmd='return 0;'"; done
+      do echo "alias $cmd='return 0'"; done
     cat "${1}"
   } > "${tsk_user_settings_tmp}"
 
-  . "${tsk_user_settings_tmp}"
+  . "${tsk_user_settings_tmp}" || {
+    echo >&2 "Sourcing of settings failed, please inspect the settings file below:"
+    cat >&2 "${tsk_user_settings_tmp}"
+  }
   rm "${tsk_user_settings_tmp}"
 
   shopt -u expand_aliases
@@ -462,10 +465,11 @@ get_package() {
 
 detect_main_class() {
   PATH="$(p_with_custom_java)" javap "${classpath_root}/$(get_package | tr . / )"*.class | \
-    tr -d "\n" | \
-    sed 's/Compiled from/\nCompiled from/g' | \
+    tr -d "\n\r" | \
+    sed 's/Compiled from/\r\nCompiled from/g' | \
     grep -F 'public static void main(java.lang.String[])' | \
-    sed 's/.*class \([a-zA-Z0-9\.]\+\).*/\1/g'
+    sed 's/.*class //g' | \
+    sed 's/ .*//g'
 }
 
 get_main_class() {
