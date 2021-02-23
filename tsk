@@ -40,7 +40,7 @@ main_class="${main_class:-}"
 verbose="${verbose:-just_progress}"
 
 # Version of Coursier, the workhorse for JVM and library fetching
-coursier_version="${coursier_version:-v2.0.8}"
+coursier_version="${coursier_version:-v2.0.12}"
 
 # Version of Java Virtual Machine, necessary to launch Bloop and (after compilation) the script itself
 java_version="${java_version:-8}"
@@ -49,7 +49,7 @@ java_version="${java_version:-8}"
 java_alpine="${java_alpine:-openjdk8-jre}"
 
 # Version of Bloop, a fast and well-integrated Scala compilation tool
-bloop_version="${bloop_version:-2.12:1.4.6}"
+bloop_version="${bloop_version:-2.12:1.4.8}"
 
 # Variables and functions internal to tsk
 # ---------------------------------------
@@ -447,9 +447,13 @@ prepare_for_running_with_bloop() {
   install_bloop             || (log_fatal "Could not install Bloop"; return 1)
   mkdir -p "${bloop_dir}"   || (log_fatal "Could not create .bloop directory"; return 1)
   generate_bloop_config     || (log_fatal "Could not generate Bloop configuration"; return 1)
-  PATH="$(p_with_custom_java)" "${bloop_cmd}" compile \
-    --config-dir "${script_dir}/.bloop" \
-    "${module}" 2>&1 | log_as progress || (fatal_error "Error while compiling with Bloop"; return 1)
+  PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala::bloopgun:${bloop_version}" \
+    --extra-jars "$( ${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- about \
+    2>&1 | log_as progress || (fatal_error "Error while pre-warming Bloop"; return 1)
+  PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala::bloopgun:${bloop_version}" \
+    --extra-jars "$( ${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- \
+    compile --config-dir "${script_dir}/.bloop" "${module}" \
+    2>&1 | log_as progress || (fatal_error "Error while compiling with Bloop"; return 1)
 }
 
 script_classpath() {
