@@ -125,7 +125,7 @@ script_file="$(echo "$0" | grep -q '\.sca\?l\?a\?$' && echo "${0}" || echo "${1}
 2) with a *.scala/*.sc file argument (. ~/.tsk/tsk-x.y.z Foo.scala) - for debugging
 
 instead found: [${script_file}]
-the arguments were: [$0 $*]"; return 1)
+the arguments were: [$0 $*]"; sleep 3600; return 1)
 if echo "$0" | grep -vq '\.sca\?l\?a\?$'
 then
   safely_source "${script_file}"
@@ -177,9 +177,12 @@ os=$(uname)
 # bloop and coursier internals
 bloop_dir="${script_dir}/.bloop"
 bloop_module_config="${bloop_dir}/${module}.json"
-tsk_meta="${bloop_dir}/${module}/tsk-meta"
+tsk_meta="${bloop_dir}/${module}/tsk"
 mkdir -p "${tsk_meta}" > /dev/null 2>&1
 cs_fetch_result="${tsk_meta}/cs_fetch.result"
+native_image_input_summary_file="${tsk_meta}/native_image_inputs.sha"
+compilation_input_summary_file="${tsk_meta}/compilation_inputs.sha"
+native_image="${tsk_meta}/binary"
 
 classpath_root="${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
 
@@ -225,6 +228,18 @@ install_java() {
   ${cs_cmd} java-home --jvm "${java_version}" --progress 2>&1 > /dev/null | log_as progress
 }
 
+install_graalvm() {
+  ${cs_cmd} java-home --jvm graalvm:21.0.0 --mode offline > /dev/null 2>&1 && return 0;
+  echo "Installing GraalVM" | log_as progress
+  ${cs_cmd} java-home --jvm graalvm:21.0.0 --progress 2>&1 > /dev/null | log_as progress
+}
+
+install_native_image_generator() {
+  [ -e "$( ${cs_cmd} java-home --jvm graalvm:21.0.0)/bin/native-image" ] && return 0;
+  echo "Installing GraalVM native-image utility" | log_as progress
+  "$( ${cs_cmd} java-home --jvm graalvm:21.0.0)/bin/gu install native-image" 2>&1 > /dev/null | log_as progress
+}
+
 install_coursier() {
   [ -e "$cs_binary" ] && return 0;
   cs_url_prefix="https://github.com/coursier/coursier/releases/download/${coursier_version}"
@@ -268,19 +283,31 @@ install_bloop() {
     "ch.epfl.scala:bloopgun_${bloop_version}" --standalone -o "${bloop_cmd}" 2>&1 | log_as progress
 }
 
+build_inputs() {
+  echo "${coursier_version}"
+  echo "${bloop_version}"
+  echo "${repositories}"
+  echo "${sources}"
+  echo "${dependencies}"
+  echo "${forced_versions}"
+  echo "${exclusions}"
+  echo "${scala_version}"
+  echo "${HOME}"
+  echo "${abs_script_dir}"
+}
+
+all_inputs() {
+  build_inputs
+  get_abs_sources | while read -r f; do echo "${f}"; done
+  cat "${script_file}"
+}
+
 build_inputs_sha() {
-  (
-    echo "${coursier_version}"
-    echo "${bloop_version}"
-    echo "${repositories}"
-    echo "${sources}"
-    echo "${dependencies}"
-    echo "${forced_versions}"
-    echo "${exclusions}"
-    echo "${scala_version}"
-    echo "${HOME}"
-    echo "${abs_script_dir}"
-  ) | get_sha_sum | tr -d ' -'
+  build_inputs | get_sha_sum | tr -d ' -'
+}
+
+all_inputs_sha() {
+  all_inputs | get_sha_sum | tr -d ' -'
 }
 
 bloop_config_template() {
@@ -407,10 +434,21 @@ artifact_info_as_tsv() {
 }
 
 generate_native_binary() {
-  ${cs_cmd} bootstrap tsk:generated:$(build_inputs_sha) \
-    --native-image --graalvm 21.0 --jvm-index https://raw.githubusercontent.com/shyiko/jabba/master/index.json  -f \
-    -o "native_binary" -M "$(get_main_class)" \
-    -- -H:+ReportExceptionStackTraces --enable-url-protocols=https,http,file,resource --enable-all-security-services --initialize-at-build-time --no-fallback
+  install_graalvm || (log_fatal "Could not install GraalVM"; return 1)
+  install_native_image_generator || (log_fatal "Could not install native-image utility"; return 1)
+  grep -q "$(all_inputs_sha)" "${native_image_input_summary_file}" 2> /dev/null && return 0
+  echo "Building native image" | log_as progress
+  (
+    $( ${cs_cmd} java-home --jvm graalvm:21.0.0 )/bin/native-image \
+      -cp "$(script_classpath)" \
+      --install-exit-handlers \
+      -H:Class="$(get_main_class)" \
+      -H:+ReportExceptionStackTraces \
+      --enable-url-protocols=https,http \
+      --enable-all-security-services \
+      --initialize-at-build-time=scala.Symbol,scala.Function1,scala.Function2,scala.runtime.StructuralCallSite,scala.runtime.EmptyMethodCache \
+      --no-fallback "$(get_main_class)" "${native_image}" 2>&1 | log_as progress
+  ) && (all_inputs_sha > "${native_image_input_summary_file}")
 }
 
 cs_report_0_1_0_to_bloop_resolution_modules() {
@@ -457,13 +495,18 @@ prepare_for_running_with_bloop() {
   install_bloop             || (log_fatal "Could not install Bloop"; return 1)
   mkdir -p "${bloop_dir}"   || (log_fatal "Could not create .bloop directory"; return 1)
   generate_bloop_config     || (log_fatal "Could not generate Bloop configuration"; return 1)
+  grep -q "$(all_inputs_sha)" "${compilation_input_summary_file}" 2> /dev/null && return 0
   PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala:bloopgun_${bloop_version}" \
     --extra-jars "$( ${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- about \
     > /dev/null 2>&1 || (fatal_error "Error while pre-warming Bloop"; return 1)
-  PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala:bloopgun_${bloop_version}" \
-    --extra-jars "$( ${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- \
-    compile --config-dir "${script_dir}/.bloop" "${module}" \
-    2>&1 | log_as progress || (fatal_error "Error while compiling with Bloop"; return 1)
+  (
+    (
+      PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala:bloopgun_${bloop_version}" \
+        --extra-jars "$( ${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- \
+        compile --config-dir "${script_dir}/.bloop" "${module}" \
+        2>&1 | log_as progress
+    ) && (all_inputs_sha > "${compilation_input_summary_file}")
+  ) || (fatal_error "Error while compiling with Bloop"; return 1)
 }
 
 script_classpath() {
@@ -525,6 +568,7 @@ show_log_and_quit() {
 
 run() {
   set -o pipefail
+  grep -q "$(all_inputs_sha)" "${native_image_input_summary_file}" 2> /dev/null && exec "${native_image}"
   if prepare_for_running_with_bloop
   then
     rm "${tsk_log}" 2> /dev/null
