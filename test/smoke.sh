@@ -31,6 +31,11 @@ setUp() {
   mkdir -p "${wd}"
 }
 
+tearDown() {
+  echo "This is contents of standard error"
+  echo "----------------------------------"
+  cat "${standard_error_file}"
+}
 
 . ./test/lib/helpers.sh
 # Load and run shUnit2.
