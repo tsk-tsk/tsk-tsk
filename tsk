@@ -447,10 +447,10 @@ prepare_for_running_with_bloop() {
   install_bloop             || (log_fatal "Could not install Bloop"; return 1)
   mkdir -p "${bloop_dir}"   || (log_fatal "Could not create .bloop directory"; return 1)
   generate_bloop_config     || (log_fatal "Could not generate Bloop configuration"; return 1)
-  PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala::bloopgun:${bloop_version}" \
+  PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala:bloopgun_${bloop_version}" \
     --extra-jars "$( ${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- about \
     2>&1 | log_as progress || (fatal_error "Error while pre-warming Bloop"; return 1)
-  PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala::bloopgun:${bloop_version}" \
+  PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala:bloopgun_${bloop_version}" \
     --extra-jars "$( ${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- \
     compile --config-dir "${script_dir}/.bloop" "${module}" \
     2>&1 | log_as progress || (fatal_error "Error while compiling with Bloop"; return 1)
