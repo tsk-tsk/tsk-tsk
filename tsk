@@ -177,7 +177,10 @@ os=$(uname)
 # bloop and coursier internals
 bloop_dir="${script_dir}/.bloop"
 bloop_module_config="${bloop_dir}/${module}.json"
-cs_fetch_result="${bloop_dir}/${module}.cs_fetch.result"
+tsk_meta="${bloop_dir}/${module}/tsk-meta"
+mkdir -p "${tsk_meta}" > /dev/null 2>&1
+cs_fetch_result="${tsk_meta}/cs_fetch.result"
+
 classpath_root="${bloop_dir}/${module}/bloop-bsp-clients-classes/classes-bloop-cli"
 
 as_string_array_elements() {
@@ -403,85 +406,11 @@ artifact_info_as_tsv() {
   }'
 }
 
-generate_pom() {
-  cat << EOF
-<?xml version='1.0' encoding='UTF-8'?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>tsk</groupId>
-    <artifactId>generated</artifactId>
-    <packaging>jar</packaging>
-    <description>Script created with TSK - The Scripting Kit</description>
-    <url>https://github.com/tsk-tsk/tsk-tsk</url>
-    <version>$(build_inputs_sha)</version>
-    <licenses>
-        <license>
-            <name>TODO</name>
-            <url>TODO</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-    <name>TODO</name>
-    <inceptionYear>TODO</inceptionYear>
-    <organization>
-        <name>TODO</name>
-        <url>https://github.com/tsk-tsk/tsk-tsk</url>
-    </organization>
-    <scm>
-        <connection>scm:git:git@github.com:tsk-tsk/tsk-tsk.git</connection>
-        <url>https://github.com/tsk-tsk/tsk-tsk.git</url>
-    </scm>
-    <issueManagement>
-        <system>GitHub</system>
-        <url>https://github.com/tsk-tsk/tsk-tsk/issues</url>
-    </issueManagement>
-    <developers>
-        <developer>
-            <id>TODO</id>
-            <name>TODO</name>
-        </developer>
-    </developers>
-    <dependencies>
-EOF
-  for i in ${dependencies} ${scala_library}
-  do
-    echo $i | sed "s/::\([^:]*\):/:\1_${scala_major_minor}:/g"
-  done | \
-  tr ':' ' ' | (
-    while read -r group artifact version
-    do
-      cat << EOF
-      <dependency>
-        <groupId>${group}</groupId>
-        <artifactId>${artifact}</artifactId>
-        <version>${version}</version>
-      </dependency>
-EOF
-    after_first="true"
-    done
-    )
-  echo '</dependencies>'
-  echo '</project>'
-}
-
-# TODO support macOS alternative cache path and the user override
-path_in_local_repo_without_suffix=~/.cache/coursier/v1/https/repo1.maven.org/maven2/tsk/generated/$(build_inputs_sha)/generated-$(build_inputs_sha)
-own_jar="${path_in_local_repo_without_suffix}.jar"
-own_pom="${path_in_local_repo_without_suffix}.pom"
-
-publish_local() {
-  mkdir -p "$(dirname "${path_in_local_repo_without_suffix}")"
-  cd "$classpath_root" || return
-  jar -cf "$own_jar" ./*
-  cd - 2> /dev/null >&2 || return
-  generate_pom > "${own_pom}"
-}
-
 generate_native_binary() {
   ${cs_cmd} bootstrap tsk:generated:$(build_inputs_sha) \
     --native-image --graalvm 21.0 --jvm-index https://raw.githubusercontent.com/shyiko/jabba/master/index.json  -f \
     -o "native_binary" -M "$(get_main_class)" \
-    -- -H:+ReportExceptionStackTraces --enable-url-protocols=https,http,ftp,file,resource --enable-all-security-services --initialize-at-build-time --no-fallback
+    -- -H:+ReportExceptionStackTraces --enable-url-protocols=https,http,file,resource --enable-all-security-services --initialize-at-build-time --no-fallback
 }
 
 cs_report_0_1_0_to_bloop_resolution_modules() {
