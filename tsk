@@ -243,7 +243,7 @@ install_graalvm() {
 install_native_image_generator() {
   [ -e "$( ${cs_cmd} java-home --jvm graalvm:21.0.0)/bin/native-image" ] && return 0;
   echo "Installing GraalVM native-image utility" | log_as progress
-  "$( ${cs_cmd} java-home --jvm graalvm:21.0.0)/bin/gu install native-image" 2>&1 > /dev/null | log_as progress
+  "$( ${cs_cmd} java-home --jvm graalvm:21.0.0)/bin/gu" install native-image 2>&1 > /dev/null | log_as progress
 }
 
 install_coursier() {
