@@ -6,8 +6,6 @@
 # Version of Scala to be used in compilation and in resolution of libraries
 scala_version="${scala_version:-2.12.13}"
 
-scala_major_minor="$(echo "${scala_version}" | sed 's/\([0-9]*\.[0-9]*\)\..*/\1/g')"
-
 # Source files/directories
 # if not set explicitly, it's being set to ${script_file} further down
 # (by default only the main script belongs to the sources)
@@ -30,6 +28,12 @@ exclusions="${exclusions:-}"
 # If not given it's assumed to be `package.name.used.in.the.first.package.statement.ScriptFileNameWithoutScalaExtension`
 # (in other words, you can rely on the default if you name your main class the same as the script file and ensure it has `main` method)
 main_class="${main_class:-}"
+
+# Whether to compile the script into a native binary for rapid execution and low memory footprint.
+# Producing of the native image may be a slow operation so it makes sense to set this option to `false`
+# during all change-intensive periods of script development (for example at the beginning)
+# and to switch it to `true` after the script is deemed "ready".
+native="${native:-false}"
 
 # TSK only ever outputs its diagnostic information to standard error, so your script's standard output stays unpolluted.
 # The verbosity can be fined tuned by setting the `verbose` variable to:
@@ -54,6 +58,8 @@ bloop_version="${bloop_version:-2.12:1.4.8}"
 # Variables and functions internal to tsk
 # ---------------------------------------
 tsk_log="${tsk_log:-${TMPDIR:-"/tmp"}/tsk-$$.log}"
+
+scala_major_minor="$(echo "${scala_version}" | sed 's/\([0-9]*\.[0-9]*\)\..*/\1/g')"
 
 fatal_error() {
   >&2 echo "FATAL ERROR: $*"
@@ -433,10 +439,11 @@ artifact_info_as_tsv() {
   }'
 }
 
-generate_native_binary() {
+prepare_native_binary() {
+  [ "${native}" = "false" ] && return 0
+  grep -q "$(all_inputs_sha)" "${native_image_input_summary_file}" 2> /dev/null && return 0
   install_graalvm || (log_fatal "Could not install GraalVM"; return 1)
   install_native_image_generator || (log_fatal "Could not install native-image utility"; return 1)
-  grep -q "$(all_inputs_sha)" "${native_image_input_summary_file}" 2> /dev/null && return 0
   echo "Building native image" | log_as progress
   (
     $( ${cs_cmd} java-home --jvm graalvm:21.0.0 )/bin/native-image \
@@ -444,9 +451,12 @@ generate_native_binary() {
       --install-exit-handlers \
       -H:Class="$(get_main_class)" \
       -H:+ReportExceptionStackTraces \
+      --static \
+      --allow-incomplete-classpath \
+      --report-unsupported-elements-at-runtime \
       --enable-url-protocols=https,http \
       --enable-all-security-services \
-      --initialize-at-build-time=scala.Symbol,scala.Function1,scala.Function2,scala.runtime.StructuralCallSite,scala.runtime.EmptyMethodCache \
+      --initialize-at-build-time=scala.Symbol,scala.Function1,scala.Function2,scala.runtime.StructuralCallSite,scala.runtime.EmptyMethodCache,scala.runtime.Statics$VM \
       --no-fallback "$(get_main_class)" "${native_image}" 2>&1 | log_as progress
   ) && (all_inputs_sha > "${native_image_input_summary_file}")
 }
@@ -568,10 +578,13 @@ show_log_and_quit() {
 
 run() {
   set -o pipefail
-  grep -q "$(all_inputs_sha)" "${native_image_input_summary_file}" 2> /dev/null && exec "${native_image}"
-  if prepare_for_running_with_bloop
+  if prepare_for_running_with_bloop && prepare_native_binary
   then
     rm "${tsk_log}" 2> /dev/null
+    grep -q "$(all_inputs_sha)" "${native_image_input_summary_file}" 2> /dev/null && \
+      eval "$(printf "%s" "exec \"${native_image}\" $(
+        seq "${argc}" | awk '{printf "\"$arg_" $1 "\" "}'
+      )")"
     eval "$(printf "%s" "exec_java $(
       seq "${argc}" | awk '{printf "\"$arg_" $1 "\" "}'
     )")"
