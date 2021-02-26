@@ -55,6 +55,9 @@ java_alpine="${java_alpine:-openjdk8-jre}"
 # Version of Bloop, a fast and well-integrated Scala compilation tool
 bloop_version="${bloop_version:-2.12:1.4.8}"
 
+# Version of GraalVM used to produce native binary of the script
+graalvm_version="${graalvm_version:-21.0.0}"
+
 # Variables and functions internal to tsk
 # ---------------------------------------
 tsk_log="${tsk_log:-${TMPDIR:-"/tmp"}/tsk-$$.log}"
@@ -235,15 +238,15 @@ install_java() {
 }
 
 install_graalvm() {
-  ${cs_cmd} java-home --jvm graalvm:21.0.0 --mode offline > /dev/null 2>&1 && return 0;
+  ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --mode offline > /dev/null 2>&1 && return 0;
   echo "Installing GraalVM" | log_as progress
-  ${cs_cmd} java-home --jvm graalvm:21.0.0 --progress 2>&1 > /dev/null | log_as progress
+  ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --progress 2>&1 > /dev/null | log_as progress
 }
 
 install_native_image_generator() {
-  [ -e "$( ${cs_cmd} java-home --jvm graalvm:21.0.0)/bin/native-image" ] && return 0;
+  [ -e "$( ${cs_cmd} java-home --jvm graalvm:${graalvm_version})/bin/native-image" ] && return 0;
   echo "Installing GraalVM native-image utility" | log_as progress
-  "$( ${cs_cmd} java-home --jvm graalvm:21.0.0)/bin/gu" install native-image 2>&1 > /dev/null | log_as progress
+  "$( ${cs_cmd} java-home --jvm graalvm:${graalvm_version})/bin/gu" install native-image 2>&1 > /dev/null | log_as progress
 }
 
 install_coursier() {
@@ -446,7 +449,7 @@ prepare_native_binary() {
   install_native_image_generator || (log_fatal "Could not install native-image utility"; return 1)
   echo "Building native image" | log_as progress
   (
-    $( ${cs_cmd} java-home --jvm graalvm:21.0.0 )/bin/native-image \
+    $( ${cs_cmd} java-home --jvm graalvm:${graalvm_version} )/bin/native-image \
       -cp "$(script_classpath)" \
       --install-exit-handlers \
       -H:Class="$(get_main_class)" \
