@@ -42,7 +42,7 @@ So TSK will be great for:
   - that small script you will use to automate the common task in your company, especially if the users are
     not really into the JVM / Scala world
   - the actually-runnable example code that demonstrates features of your library
-  - that little diagnostic program that you'll run inside a problematic Kubernetes pod
+  - that little diagnostic program that you'll run inside of a problematic Kubernetes pod
     to figure out what's happening
   - that quick prototype that you want to experiment with, before deciding if it would pay off to invest into a proper
     build configuration, CI setup and other software-engineery things like that
@@ -57,9 +57,11 @@ So TSK will be great for:
     proper build tool, like [SBT](https://www.scala-sbt.org/) or [Mill](http://www.lihaoyi.com/mill/)
   - you want to rely on features of build tools, like compiler plugins, custom warning settings, multi-projects,
     test frameworks, code coverage measurements, etc.
-  - you don't mind spending an extra effort to provide the best possible experience for your end users: in that case
+  - you don't mind spending extra effort to provide the best possible experience for your end users: in that case
     use the respective system's package management software or provide an appropriate platform-dependent installer
     like [IntelliJ IDEA](https://www.jetbrains.com/idea/download/) has
+  - you (and/or your users) are on Windows without WSL or on any other platform that is not yet supported:
+    [Ammonite Scripts](http://ammonite.io/#ScalaScripts) will be of help to you
   - or, in general, when other Scala tools work well for your use-cases already
 
 ## Example
@@ -125,8 +127,12 @@ various features of TSK in action.
 
 - The simplest possible workflow: you write the script, and you make it executable. That's it.
 The initial script run downloads those of the required dependencies that don't exist on the machine yet.
-- All Scala and Java libraries available, as long they are in some Maven or Ivy repository (internal corporate
-repositories requiring credentials and/or proxies are supported as well - use your in-house components in your scripts)
+- [All Scala and Java libraries](https://github.com/tsk-tsk/tsk-tsk/wiki#external-libraries) available,
+  as long they are in some Maven or Ivy repository (
+  [internal corporate repositories](https://github.com/tsk-tsk/tsk-tsk/wiki#private-repositories)
+  requiring [credentials](https://github.com/tsk-tsk/tsk-tsk/wiki#repository-credentials)
+  and/or [proxies](https://github.com/tsk-tsk/tsk-tsk/wiki#access-to-external-repositories-from-behind-a-proxy)
+  are supported as well - use your in-house components in your scripts)
 - Regular Scala, without any syntax that'd confuse standard tooling (editable without red squiggles in IntelliJ IDEA).
   When your script grows somewhat, but not to a degree when it'd need a full-blown project, split it into separate files
   with all Scala constructs (like packages) working as expected
@@ -138,13 +144,13 @@ repositories requiring credentials and/or proxies are supported as well - use yo
     - [Debian](https://www.debian.org/), [Ubuntu](https://ubuntu.com/) after you install `curl`
   - most likely your Linux distribution even without root permissions as long you've installed `curl` or `wget`
 - Experimental support for Ammonite scripts (use `run_with_ammonite` instead of `run`)
+- Compilation of your script to a native binary (with GraalVM) to reduce the script's memory footprint and startup time
 
 ## Planned features
 
 - Easy migration to a full-blown Scala project when the script grows.
 The script is valid Scala, so the existing tooling handles it perfectly well - the TSK-specific parts are hidden
 from the Scala compiler within the Scala comment block. TSK will be able to generate SBT and Mill projects
-- Compilation of your script to a native binary (with GraalVM) to reduce the script's memory footprint and startup time
 - Robust handling of errors made in the shell part (preamble)
 
 ## Acknowledgements
@@ -162,4 +168,5 @@ TSK stands on the shoulders of giants. Kudos to all authors and contributors of 
 - To that [ScalaPolis2016](https://web.archive.org/web/20170606154012/http://konf.scalapolis.pl/#slot3) attendee, who noticed, that it's possible for a file to be both valid Scala and valid shell.
 - To those of the [ScalaPolis2016](https://web.archive.org/web/20170606154012/http://konf.scalapolis.pl/#slot3) and [FunctionalTricity 28.04.2016](https://www.meetup.com/FunctionalTricity/photos/26928835/449436348/) attendees, who have appreciated my points and to those who made fun of them.
 I enjoyed our conversations very much :smile:
+- To all people who gave me feedback after my talk on TSK at the [Scala Love 2021 conference](https://inthecity.scala.love/)
 - To the wonderful organizers of the mentioned events for having me and for still wanting me to speak! :wink:
