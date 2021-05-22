@@ -62,7 +62,20 @@ graalvm_version="${graalvm_version:-21.0.0}"
 # ---------------------------------------
 tsk_log="${tsk_log:-${TMPDIR:-"/tmp"}/tsk-$$.log}"
 
-scala_major_minor="$(echo "${scala_version}" | sed 's/\([0-9]*\.[0-9]*\)\..*/\1/g')"
+case "${scala_version}" in
+  *RC*)
+    scala_binary_version="${scala_version}"
+    ;;
+  *M*)
+    scala_binary_version="${scala_version}"
+    ;;
+  2*)
+    scala_binary_version="$(echo "${scala_version}" | sed 's/\([0-9]*\.[0-9]*\)\..*/\1/g')"
+    ;;
+  3*)
+    scala_binary_version="$(echo "${scala_version}" | sed 's/\([0-9]*\)\..*/\1/g')"
+    ;;
+esac
 
 fatal_error() {
   >&2 echo "FATAL ERROR: $*"
@@ -205,8 +218,8 @@ case "${scala_version}" in
     scala_library="org.scala-lang:scala-library:${scala_version}"
     ;;
   3*)
-    scala_compiler="org.scala-lang:scala3-compiler_${scala_version}:latest.release"
-    scala_library="org.scala-lang:scala3-library_${scala_version}:latest.release"
+    scala_compiler="org.scala-lang:scala3-compiler_${scala_binary_version}:latest.release"
+    scala_library="org.scala-lang:scala3-library_${scala_binary_version}:latest.release"
     ;;
   *)
     fatal_error "Sorry, Scala version [${scala_version}] is not supported by TSK"
@@ -335,7 +348,7 @@ bloop_config_template() {
             $(cs_fetch --default ${dependencies} ${scala_library} | as_string_array_elements)
         ],
         "out": "${abs_script_dir}/.bloop/${module}",
-        "classesDir": "${abs_script_dir}/.bloop/${module}/scala-${scala_major_minor}/classes",
+        "classesDir": "${abs_script_dir}/.bloop/${module}/scala-${scala_binary_version}/classes",
         "resources": [],
         "scala": {
             "organization": "org.scala-lang",
@@ -347,7 +360,7 @@ bloop_config_template() {
             "jars": [
                 $(cs_fetch ${compiler_deps} | as_string_array_elements)
             ],
-            "analysis": "${abs_script_dir}/.bloop/${module}/inc_compile_${scala_major_minor}.zip",
+            "analysis": "${abs_script_dir}/.bloop/${module}/inc_compile_${scala_binary_version}.zip",
             "setup": {
                 "order": "mixed",
                 "addLibraryToBootClasspath": true,
