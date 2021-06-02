@@ -15,8 +15,8 @@ emulateTskDownload() {
 # (to not have to rely on every version be exposed at git.io)
 preamble() {
   sed "s/VERSION/${tsk_version}/g
-       s/SETTINGS/${2}/g;" "./doc/preambles/${1}" | \
-       sed "s|git.io/boot-tsk-${tsk_version}|raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/boot-tsk|g
+       s/SETTINGS/${2}/g;" "./doc/preambles/${1}" |
+    sed "s|git.io/boot-tsk-${tsk_version}|raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/boot-tsk|g
             s|git.io/boot-tsk-\\\$v|raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/boot-tsk|g"
 }
 
@@ -35,7 +35,8 @@ assertScriptFailed() {
 
 assertStandardErrorEmpty() {
   assertEquals "Standard error was expected to be empty, but it was:\n[$(
-    cat "${standard_error_file}")]" "${1}" "$(cat "${standard_error_file}")"
+    cat "${standard_error_file}"
+  )]" "${1}" "$(cat "${standard_error_file}")"
 }
 
 assertStandardErrorContains() {

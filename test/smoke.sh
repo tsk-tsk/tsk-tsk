@@ -5,7 +5,7 @@ testEchoToStandardOutput() {
 
   # shellcheck disable=SC2016
   scala_script='object Hello extends App { println("hello") }'
-  preamble shortest      > "${wd}/Hello.scala"
+  preamble shortest > "${wd}/Hello.scala"
   echo "${scala_script}" >> "${wd}/Hello.scala"
   chmod +x "${wd}/Hello.scala"
 

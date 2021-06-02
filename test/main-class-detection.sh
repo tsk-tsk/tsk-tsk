@@ -7,10 +7,10 @@ testClassMatchesScriptName() {
   } | saveAsScript "${wd}/Easy.scala"
 
   bash -c "${wd}/Easy.scala" > "${standard_output_file}" 2> "${standard_error_file}"
-  exit_code=$?
+  export exit_code=$?
 
   assertScriptSuccessful
-  assertStandardErrorEmpty
+  assertStandardErrorEmpty ""
   assertStandardOutputEquals "ok"
 }
 
@@ -22,6 +22,7 @@ package app
 object Easy extends App { println("ok") }'
   } | saveAsScript "${wd}/Easy.scala"
 
+  # shellcheck disable=SC1090
   source ~/.tsk/tsk-local "${wd}/Easy.scala"
   prepare_for_running_with_bloop
 
@@ -37,6 +38,7 @@ package com.companyname.systemname.modulename
 object Easy extends App { println("ok") }'
   } | saveAsScript "${wd}/Easy.scala"
 
+  # shellcheck disable=SC1090
   source ~/.tsk/tsk-local "${wd}/Easy.scala"
   prepare_for_running_with_bloop
 
@@ -50,6 +52,7 @@ testClassAndScriptNameMismatch() {
     echo 'object PieceOfCake extends App { println("ok") }'
   } | saveAsScript "${wd}/Easy.scala"
 
+  # shellcheck disable=SC1090
   source ~/.tsk/tsk-local "${wd}/Easy.scala"
   prepare_for_running_with_bloop
 
