@@ -197,7 +197,7 @@ Make sure you have sufficient access rights and that no file with this name exis
 # work around https://github.com/coursier/coursier/issues/1856
 # shellcheck disable=SC2001
 bloop_cmd="${td}/bloop-$(echo "${bloop_version}" | sed 's/:/_/g')"
-cs_binary="${td}/cs-${coursier_version}$([[ "system" = "$java_version" ]] && echo "-jvmless" || echo "-$os")"
+cs_binary="${td}/cs-${coursier_version}$([[ "system" = "${java_version}" ]] && echo "-jvmless" || echo "-${os}")"
 cs_cmd="${cs_binary} ${COURSIER_OPTS:-}"
 get_sha_sum() {
   if command -v sha256sum > /dev/null 2>&1; then
@@ -328,10 +328,21 @@ install_coursier() {
 install_bloop() {
   [ -e "${bloop_cmd}" ] && return 0
   echo "Installing Bloop" | log_as progress
+  # First try to install bloop prebuilt binary (~4k) otherwise simply bootstrap (~30M) with coursier.
+  # The prebuilt binary is preferred since it will be faster since coursier bootstrapped binaries DO perform JVM startup.
+  (install_bloop_prebuilt || install_bloop_bootstrapped) 2>&1 | log_as progress
+}
+
+install_bloop_prebuilt() {
+  ${cs_cmd} install "bloop:$(echo "${bloop_version}" | sed 's/.*://g')" --only-prebuilt=true --install-dir "${td}" &&
+    mv "${td}/bloop" "${bloop_binary}"
+}
+
+install_bloop_bootstrapped() {
   # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
-  # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
+  # $cs_cmd bootstrap bloop --standalone -o "${bloop_binary}"
   PATH="$(p_with_custom_java)" ${cs_cmd} bootstrap \
-    "ch.epfl.scala:bloopgun_${bloop_version}" --standalone -o "${bloop_cmd}" 2>&1 | log_as progress
+    "ch.epfl.scala:bloopgun_${bloop_version}" --standalone -o "${bloop_binary}"
 }
 
 build_inputs() {
@@ -575,18 +586,13 @@ prepare_for_running_with_bloop() {
     return 1
   )
   grep -q "$(all_inputs_sha)" "${compilation_input_summary_file}" 2> /dev/null && return 0
-  PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala:bloopgun_${bloop_version}" \
-    --extra-jars "$(${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- about \
-    > /dev/null 2>&1 || (
+  "${bloop_binary}" about > /dev/null 2>&1 || (
     fatal_error "Error while pre-warming Bloop"
     return 1
   )
-  ( 
+  (
     (
-      PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala:bloopgun_${bloop_version}" \
-        --extra-jars "$(${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- \
-        compile --config-dir "${script_dir}/.bloop" "${module}" \
-        2>&1 | log_as progress
+      "${bloop_binary}" compile --config-dir "${script_dir}/.bloop" "${module}" 2>&1 | log_as progress
     ) && (all_inputs_sha > "${compilation_input_summary_file}")
   ) || (
     fatal_error "Error while compiling with Bloop"
