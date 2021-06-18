@@ -44,12 +44,12 @@ native="${native:-false}"
 verbose="${verbose:-just_progress}"
 
 # Version of Coursier, the workhorse for JVM and library fetching
-coursier_version="${coursier_version:-v2.0.12}"
+coursier_version="${coursier_version:-v2.0.16}"
 
 # Version of Java Virtual Machine, necessary to launch Bloop and (after compilation) the script itself
 # A value of `system` prevents TSK from trying to download a JVM and expects an existing JVM to be available.
 # Once you have Coursier installed you can use `coursier java --available` to get a list of installable runtimes.
-java_version="${java_version:-8}"
+java_version="${java_version:-$(command -v java > /dev/null 2>&1 && echo "system" || echo "8")}"
 
 # Version of Java used at Alpine in order to bootstrap Coursier
 java_alpine="${java_alpine:-openjdk8-jre}"
