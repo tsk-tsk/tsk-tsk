@@ -210,28 +210,11 @@ get_sha_sum() {
 }
 
 cached_cs_java_home=""
-cs_java_home() {
-  [ -n "$cached_cs_java_home" ] && echo "$cached_cs_java_home" && return 0
-  local value
-  (value="$(${cs_cmd} java-home --mode offline --jvm "${java_version}" "${@}")" || return $?)
-  cached_cs_java_home="$value"
-  echo "$cached_cs_java_home"
-}
-
 cached_cs_graalvm_home=""
-cs_graalvm_home() {
-  [ -n "$cached_cs_graalvm_home" ] && echo "$cached_cs_graalvm_home" && return 0
-  local value
-  (value="$(${cs_cmd} java-home --mode offline --jvm "graalvm:${graalvm_version}" "${@}")" || return $?)
-  cached_cs_graalvm_home="$value"
-  echo "$cached_cs_graalvm_home"
-}
-
-
 cached_p_with_custom_java=""
 p_with_custom_java() {
   [ -z "$cached_p_with_custom_java" ] &&
-    cached_p_with_custom_java="$(cs_java_home)/bin:${PATH}"
+    cached_p_with_custom_java="${cached_cs_java_home}/bin:${PATH}"
   echo "$cached_p_with_custom_java"
 }
 
@@ -289,21 +272,43 @@ cs_fetch() {
 }
 
 install_java() {
-  cs_java_home --mode offline > /dev/null 2>&1 && return 0;
-  echo "Installing Java Virtual Machine" | log_as progress
-  cs_java_home --progress 2>&1 > /dev/null | log_as progress
+  [ -n "${cached_cs_java_home}" ] && return 0
+  temp_file="${TMPDIR}/tsk-??-java-home"
+  ${cs_cmd} java-home --jvm "${java_version}" --mode offline > "${temp_file}" 2>&1
+  result=$?
+  if [ $result -ne 0 ]; then
+    echo "Installing Java Virtual Machine" | log_as progress
+    ${cs_cmd} java-home --jvm "${java_version}" --progress 2>&1 > "${temp_file}" | log_as progress
+  fi
+  result=$?
+  if [ $result -eq 0 ]; then
+    cached_cs_java_home=$(cat "${temp_file}")
+  fi
+  rm "${temp_file}"
+  return $result
 }
 
 install_graalvm() {
-  cs_graalvm_home --mode offline > /dev/null 2>&1 && return 0;
-  echo "Installing GraalVM" | log_as progress
-  cs_graalvm_home --progress 2>&1 > /dev/null | log_as progress
+  [ -n "${cached_cs_graalvm_home}" ] && return 0
+  temp_file="${TMPDIR}/tsk-??-graalvm-home"
+  ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --mode offline > "${temp_file}" 2>&1;
+  result=$?
+  if [ $result -ne 0 ]; then
+    echo "Installing GraalVM" | log_as progress
+    ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --progress 2>&1 > "${temp_file}" | log_as progress
+  fi
+  result=$?
+  if [ $result -eq 0 ]; then
+    cached_cs_graalvm_home=$(cat "${temp_file}")
+  fi
+  rm "${temp_file}"
+  return $result
 }
 
 install_native_image_generator() {
-  [ -e "$(cs_graalvm_home)/bin/native-image" ] && return 0;
+  [ -e "${cached_cs_graalvm_home}/bin/native-image" ] && return 0;
   echo "Installing GraalVM native-image utility" | log_as progress
-  "$(cs_graalvm_home)/bin/gu" install native-image 2>&1 > /dev/null | log_as progress
+  "${cached_cs_graalvm_home}/bin/gu" install native-image 2>&1 > /dev/null | log_as progress
 }
 
 install_coursier() {
@@ -588,43 +593,43 @@ EOF
 }
 
 prepare_java() {
-  install_coursier || (
+  install_coursier || {
     log_fatal "Could not install Coursier"
     return 1
-  )
-  install_java || (
+  }
+  install_java || {
     log_fatal "Could not install Java Virtual Machine"
     return 1
-  )
+  }
 }
 
 prepare_for_running_with_bloop() {
   prepare_java
-  install_bloop || (
+  install_bloop || {
     log_fatal "Could not install Bloop"
     return 1
-  )
-  mkdir -p "${bloop_dir}" || (
+  }
+  mkdir -p "${bloop_dir}" || {
     log_fatal "Could not create .bloop directory"
     return 1
-  )
-  generate_bloop_config || (
+  }
+  generate_bloop_config || {
     log_fatal "Could not generate Bloop configuration"
     return 1
-  )
+  }
   grep -q "$(all_inputs_sha)" "${compilation_input_summary_file}" 2> /dev/null && return 0
-  "${bloop_binary}" about > /dev/null 2>&1 || (
+  PATH="$(p_with_custom_java)" "${bloop_binary}" about > /dev/null 2>&1 || {
     fatal_error "Error while pre-warming Bloop"
     return 1
-  )
+  }
   (
     (
-      "${bloop_binary}" compile --config-dir "${script_dir}/.bloop" "${module}" 2>&1 | log_as progress
+      PATH="$(p_with_custom_java)" "${bloop_binary}" compile --config-dir "${script_dir}/.bloop" "${module}" 2>&1 | log_as progress
     ) && (all_inputs_sha > "${compilation_input_summary_file}")
-  ) || (
+  ) || {
     fatal_error "Error while compiling with Bloop"
     return 1
-  )
+  }
 }
 
 script_classpath() {
