@@ -64,6 +64,7 @@ graalvm_version="${graalvm_version:-21.0.0}"
 # ---------------------------------------
 tsk_log="${tsk_log:-${TMPDIR:-"/tmp"}/tsk-$$.log}"
 
+# shellcheck disable=SC2001
 case "${scala_version}" in
   *RC*)
     scala_binary_version="${scala_version}"
@@ -80,21 +81,26 @@ case "${scala_version}" in
 esac
 
 fatal_error() {
-  >&2 echo "FATAL ERROR: $*"
+  echo >&2 "FATAL ERROR: $*"
 }
 
 log_as() {
   case "${verbose}" in
     "false")
-      tee -a "${tsk_log}" > /dev/null;;
+      tee -a "${tsk_log}" > /dev/null
+      ;;
     "just_progress")
       local log_level="${1}"
-      local log_target="$([ "${log_level}" = "progress" ] && echo "/dev/stderr" || echo "/dev/null")"
-      tee -a "${tsk_log}" "${log_target}" > /dev/null;;
+      local log_target
+      log_target="$([ "${log_level}" = "progress" ] && echo "/dev/stderr" || echo "/dev/null")"
+      tee -a "${tsk_log}" "${log_target}" > /dev/null
+      ;;
     "true")
-      tee -a "${tsk_log}" /dev/stderr > /dev/null;;
+      tee -a "${tsk_log}" /dev/stderr > /dev/null
+      ;;
     *)
-      tee -a "${tsk_log}" /dev/stderr > /dev/null;;
+      tee -a "${tsk_log}" /dev/stderr > /dev/null
+      ;;
   esac
 }
 
@@ -121,13 +127,12 @@ safely_source() {
   tsk_user_settings_tmp="${TMPDIR:-"/tmp"}/tsk-$$.settings"
   {
     echo 'shopt -s expand_aliases'
-    for cmd in . source cat curl wget sh
-      do echo "alias $cmd=true"; done
-    for cmd in . run_with_ammonite run package import object case class trait implicit private
-      do echo "alias $cmd='return 0'"; done
+    for cmd in . source cat curl wget sh; do echo "alias $cmd=true"; done
+    for cmd in . run_with_ammonite run package import object case class trait implicit private; do echo "alias $cmd='return 0'"; done
     cat "${1}"
   } > "${tsk_user_settings_tmp}"
 
+  # shellcheck disable=SC1090
   . "${tsk_user_settings_tmp}" || {
     echo >&2 "Sourcing of settings failed, please inspect the settings file below:"
     cat >&2 "${tsk_user_settings_tmp}"
@@ -143,22 +148,28 @@ safely_source() {
 # The alternative way of sourcing the TSK (~/.tsk/tsk-x.y.z Foo.scala)
 # mainly serves debugging purposes as you are able to check output of the individual functions
 script_file="$(echo "$0" | grep -q '\.sca\?l\?a\?$' && echo "${0}" || echo "${1}")"
-[ -e "${script_file}" ] || (fatal_error \
-  "tsk must be sourced in one of two supported ways:
+[ -e "${script_file}" ] || (
+  fatal_error \
+    "tsk must be sourced in one of two supported ways:
 1) from within a *.scala/*.sc file (normal operation) or
 2) with a *.scala/*.sc file argument (. ~/.tsk/tsk-x.y.z Foo.scala) - for debugging
 
 instead found: [${script_file}]
-the arguments were: [$0 $*]"; sleep 3600; return 1)
-if echo "$0" | grep -vq '\.sca\?l\?a\?$'
-then
+the arguments were: [$0 $*]"
+  sleep 3600
+  return 1
+)
+if echo "$0" | grep -vq '\.sca\?l\?a\?$'; then
   safely_source "${script_file}"
 fi
 
 sources="${sources:-${script_file}}"
 
 get_abs_script_dir() {
-  cd "${script_dir}" || (fatal_error "Can't cd to the script directory, symbolic links not supported (yet?)"; return 1)
+  cd "${script_dir}" || (
+    fatal_error "Can't cd to the script directory, symbolic links not supported (yet?)"
+    return 1
+  )
   pwd -P
 }
 
@@ -169,8 +180,7 @@ abs_source_patterns() {
     /^.+\$/ { print \"${abs_script_dir}/\" \$1}"
 }
 get_abs_sources() {
-  for source_entry in $(abs_source_patterns)
-  do
+  for source_entry in $(abs_source_patterns); do
     echo "${source_entry}"
   done | sort -u | grep -v '[^\]\*' | grep -v -F "${script_file}"
 }
@@ -185,22 +195,22 @@ td=~/.tsk
 mkdir -p "$td" > /dev/null 2>&1 || (fatal_error "Directory '${td}' is required by script to be run.
 Make sure you have sufficient access rights and that no file with this name exists already."; exit 1)
 # work around https://github.com/coursier/coursier/issues/1856
+# shellcheck disable=SC2001
 bloop_cmd="${td}/bloop-$(echo "${bloop_version}" | sed 's/:/_/g')"
 cs_binary="${td}/cs-${coursier_version}$([[ "system" = "$java_version" ]] && echo "-jvmless" || echo "-$os")"
 cs_cmd="${cs_binary} ${COURSIER_OPTS:-}"
 get_sha_sum() {
-  if command -v sha256sum > /dev/null 2>&1
-  then
+  if command -v sha256sum > /dev/null 2>&1; then
     sha256sum
   else
     shasum -a 256
   fi
 }
 p_with_custom_java() {
-  echo "$( ${cs_cmd} java-home -q --mode offline --jvm "${java_version}" )/bin:${PATH}"
+  echo "$(${cs_cmd} java-home -q --mode offline --jvm "${java_version}")/bin:${PATH}"
 }
-download_as=$( command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo" )
-module="$( basename "${script_file}" | sed 's/\.scala//g' )"
+download_as=$(command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo")
+module="$(basename "${script_file}" | sed 's/\.scala//g')"
 
 # bloop and coursier internals
 bloop_dir="${script_dir}/.bloop"
@@ -230,6 +240,7 @@ case "${scala_version}" in
   *)
     fatal_error "Sorry, Scala version [${scala_version}] is not supported by TSK"
     return 1
+    ;;
 esac
 
 compiler_deps="
@@ -251,25 +262,25 @@ cs_fetch() {
 }
 
 install_java() {
-  ${cs_cmd} java-home --jvm "${java_version}" --mode offline > /dev/null 2>&1 && return 0;
+  ${cs_cmd} java-home --jvm "${java_version}" --mode offline > /dev/null 2>&1 && return 0
   echo "Installing Java Virtual Machine" | log_as progress
   ${cs_cmd} java-home --jvm "${java_version}" --progress 2>&1 > /dev/null | log_as progress
 }
 
 install_graalvm() {
-  ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --mode offline > /dev/null 2>&1 && return 0;
+  ${cs_cmd} java-home --jvm "graalvm:${graalvm_version}" --mode offline > /dev/null 2>&1 && return 0
   echo "Installing GraalVM" | log_as progress
-  ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --progress 2>&1 > /dev/null | log_as progress
+  ${cs_cmd} java-home --jvm "graalvm:${graalvm_version}" --progress 2>&1 > /dev/null | log_as progress
 }
 
 install_native_image_generator() {
-  [ -e "$( ${cs_cmd} java-home --jvm graalvm:${graalvm_version})/bin/native-image" ] && return 0;
+  [ -e "$(${cs_cmd} java-home --jvm graalvm:"${graalvm_version}")/bin/native-image" ] && return 0
   echo "Installing GraalVM native-image utility" | log_as progress
-  "$( ${cs_cmd} java-home --jvm graalvm:${graalvm_version})/bin/gu" install native-image 2>&1 > /dev/null | log_as progress
+  "$(${cs_cmd} java-home --jvm graalvm:"${graalvm_version}")/bin/gu" install native-image 2>&1 > /dev/null | log_as progress
 }
 
 install_coursier() {
-  [ -e "$cs_binary" ] && return 0;
+  [ -e "$cs_binary" ] && return 0
   cs_url_prefix="https://github.com/coursier/coursier/releases/download/${coursier_version}"
   case "${os}/java-${java_version}" in
     *"/java-system")
@@ -282,25 +293,32 @@ install_coursier() {
         "libc.musl")
           # Coursier isn't compiled against libc.musl yet (Alpine uses it), need to either have java already
           # or to have root permissions
-          if ! command -v java > /dev/null 2>&1
-          then
-            if [ "$(whoami)" = "root" ]
-            then
+          if ! command -v java > /dev/null 2>&1; then
+            if [ "$(whoami)" = "root" ]; then
               echo "Installing Java for Coursier" | log_as progress
               { apk update && apk add "${java_alpine}"; } 2>&1 | log_as progress
             else
-              log_fatal "No java present and no root user, which could install it"; return 1
+              log_fatal "No java present and no root user, which could install it"
+              return 1
             fi
           fi
-          cs_url="${cs_url_prefix}/coursier";;
+          cs_url="${cs_url_prefix}/coursier"
+          ;;
         "libc.so.6")
-          cs_url="${cs_url_prefix}/cs-x86_64-pc-linux";;
-      esac;;
+          cs_url="${cs_url_prefix}/cs-x86_64-pc-linux"
+          ;;
+      esac
+      ;;
     "Darwin"*)
-      cs_url="${cs_url_prefix}/cs-x86_64-apple-darwin";;
+      cs_url="${cs_url_prefix}/cs-x86_64-apple-darwin"
+      ;;
     *)
       cs_url="${cs_url_prefix}/coursier"
-      command -v java > /dev/null 2>&1 || (log_fatal "Unknown system: ${os} and no java present. Please install java first"; return 1)
+      command -v java > /dev/null 2>&1 || (
+        log_fatal "Unknown system: ${os} and no java present. Please install java first"
+        return 1
+      )
+      ;;
   esac
   echo "Installing Coursier" | log_as progress
   ${download_as} "$cs_binary" "$cs_url" 2>&1 | log_as progress
@@ -308,7 +326,7 @@ install_coursier() {
 }
 
 install_bloop() {
-  [ -e "${bloop_cmd}" ] && return 0;
+  [ -e "${bloop_cmd}" ] && return 0
   echo "Installing Bloop" | log_as progress
   # Normally we should install the latest stable like below, but it seems to have troubles at the time of writing it
   # $cs_cmd bootstrap bloop --standalone -o "${bloop_cmd}"
@@ -344,6 +362,7 @@ all_inputs_sha() {
 }
 
 bloop_config_template() {
+  # shellcheck disable=SC2002
   cat << EOF
 {
     "tsk_build_inputs_sha": "$(build_inputs_sha)",
@@ -356,7 +375,7 @@ bloop_config_template() {
         "dependencies": [
         ],
         "classpath": [
-            $(cs_fetch --default ${dependencies} ${scala_library} | as_string_array_elements)
+            $(cs_fetch --default "${dependencies}" "${scala_library}" | as_string_array_elements)
         ],
         "out": "${abs_script_dir}/.bloop/${module}",
         "classesDir": "${abs_script_dir}/.bloop/${module}/scala-${scala_binary_version}/classes",
@@ -369,7 +388,7 @@ bloop_config_template() {
 
             ],
             "jars": [
-                $(cs_fetch ${compiler_deps} | as_string_array_elements)
+                $(cs_fetch "${compiler_deps}" | as_string_array_elements)
             ],
             "analysis": "${abs_script_dir}/.bloop/${module}/inc_compile_${scala_binary_version}.zip",
             "setup": {
@@ -405,22 +424,21 @@ EOF
 }
 
 fetch_all_dependencies() {
-    fetch_all() {
-      # shellcheck disable=SC2086
-      # (all dependencies need to be passed space-separated so shell word splitting is fine here)
-      cs_fetch --sources --javadoc --default --progress \
-        ${compiler_deps} ${dependencies} --json-output-file "${cs_fetch_result}" $*
-    }
-    fetch_all --mode offline > /dev/null 2>&1 && return 0;
-    echo "Fetching all libraries the script depends upon" | log_as progress
-    # shellcheck disable=SC2069
-    # (we want to pipe stderr alone, discarding stdout)
-    fetch_all 2>&1 > /dev/null | log_as progress
+  fetch_all() {
+    # shellcheck disable=SC2086
+    # (all dependencies need to be passed space-separated so shell word splitting is fine here)
+    cs_fetch --sources --javadoc --default --progress \
+      ${compiler_deps} ${dependencies} --json-output-file "${cs_fetch_result}" "${@}"
+  }
+  fetch_all --mode offline > /dev/null 2>&1 && return 0
+  echo "Fetching all libraries the script depends upon" | log_as progress
+  # shellcheck disable=SC2069
+  # (we want to pipe stderr alone, discarding stdout)
+  fetch_all 2>&1 > /dev/null | log_as progress
 }
 
 generate_bloop_config() {
-  if grep -q "tsk_build_inputs_sha.*$(build_inputs_sha)" "${bloop_module_config}" 2>/dev/null
-  then
+  if grep -q "tsk_build_inputs_sha.*$(build_inputs_sha)" "${bloop_module_config}" 2> /dev/null; then
     # good, config can stay
     true
   else
@@ -442,7 +460,7 @@ just_file_and_coords() {
 }
 
 strip_file_and_coords_markers() {
-    sed 's/FILE //g
+  sed 's/FILE //g
          s/COORD //g'
 }
 
@@ -469,11 +487,17 @@ artifact_info_as_tsv() {
 prepare_native_binary() {
   [ "${native}" = "false" ] && return 0
   grep -q "$(all_inputs_sha)" "${native_image_input_summary_file}" 2> /dev/null && return 0
-  install_graalvm || (log_fatal "Could not install GraalVM"; return 1)
-  install_native_image_generator || (log_fatal "Could not install native-image utility"; return 1)
+  install_graalvm || (
+    log_fatal "Could not install GraalVM"
+    return 1
+  )
+  install_native_image_generator || (
+    log_fatal "Could not install native-image utility"
+    return 1
+  )
   echo "Building native image" | log_as progress
   (
-    $( ${cs_cmd} java-home --jvm graalvm:${graalvm_version} )/bin/native-image \
+    "$(${cs_cmd} java-home --jvm graalvm:"${graalvm_version}")/bin/native-image" \
       -cp "$(script_classpath)" \
       --install-exit-handlers \
       -H:Class="$(get_main_class)" \
@@ -483,19 +507,18 @@ prepare_native_binary() {
       --report-unsupported-elements-at-runtime \
       --enable-url-protocols=https,http \
       --enable-all-security-services \
-      --initialize-at-build-time=scala.Symbol,scala.Function1,scala.Function2,scala.runtime.StructuralCallSite,scala.runtime.EmptyMethodCache,scala.runtime.Statics$VM \
+      --initialize-at-build-time="scala.Symbol,scala.Function1,scala.Function2,scala.runtime.StructuralCallSite,scala.runtime.EmptyMethodCache,scala.runtime.Statics$VM" \
       --no-fallback "$(get_main_class)" "${native_image}" 2>&1 | log_as progress
   ) && (all_inputs_sha > "${native_image_input_summary_file}")
 }
 
 cs_report_0_1_0_to_bloop_resolution_modules() {
-  unjsonize_cs_report | \
-    just_file_and_coords | \
-    strip_file_and_coords_markers | \
+  unjsonize_cs_report |
+    just_file_and_coords |
+    strip_file_and_coords_markers |
     artifact_info_as_tsv | (
     after_first="false"
-    while read -r group artifact version jar_path javadoc_path sources_path
-    do
+    while read -r group artifact version jar_path javadoc_path sources_path; do
       [ "${after_first}" = "true" ] && echo ","
       cat << EOF
                 {
@@ -521,40 +544,62 @@ cs_report_0_1_0_to_bloop_resolution_modules() {
                     ]
                 }
 EOF
-    after_first="true"
+      after_first="true"
     done
-    )
+  )
 }
 
 prepare_java() {
-  install_coursier          || (log_fatal "Could not install Coursier"; return 1)
-  install_java              || (log_fatal "Could not install Java Virtual Machine"; return 1)
+  install_coursier          || (
+    log_fatal "Could not install Coursier"
+    return 1
+  )
+  install_java              || (
+    log_fatal "Could not install Java Virtual Machine"
+    return 1
+  )
 }
 
 prepare_for_running_with_bloop() {
   prepare_java
-  install_bloop             || (log_fatal "Could not install Bloop"; return 1)
-  mkdir -p "${bloop_dir}"   || (log_fatal "Could not create .bloop directory"; return 1)
-  generate_bloop_config     || (log_fatal "Could not generate Bloop configuration"; return 1)
+  install_bloop || (
+    log_fatal "Could not install Bloop"
+    return 1
+  )
+  mkdir -p "${bloop_dir}" || (
+    log_fatal "Could not create .bloop directory"
+    return 1
+  )
+  generate_bloop_config || (
+    log_fatal "Could not generate Bloop configuration"
+    return 1
+  )
   grep -q "$(all_inputs_sha)" "${compilation_input_summary_file}" 2> /dev/null && return 0
   PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala:bloopgun_${bloop_version}" \
-    --extra-jars "$( ${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- about \
-    > /dev/null 2>&1 || (fatal_error "Error while pre-warming Bloop"; return 1)
-  (
+    --extra-jars "$(${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- about \
+    > /dev/null 2>&1 || (
+    fatal_error "Error while pre-warming Bloop"
+    return 1
+  )
+  ( 
     (
       PATH="$(p_with_custom_java)" ${cs_cmd} launch "ch.epfl.scala:bloopgun_${bloop_version}" \
-        --extra-jars "$( ${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- \
+        --extra-jars "$(${cs_cmd} fetch -p org.scala-lang.modules:scala-collection-compat_2.12:2.4.2)" -- \
         compile --config-dir "${script_dir}/.bloop" "${module}" \
         2>&1 | log_as progress
     ) && (all_inputs_sha > "${compilation_input_summary_file}")
-  ) || (fatal_error "Error while compiling with Bloop"; return 1)
+  ) || (
+    fatal_error "Error while compiling with Bloop"
+    return 1
+  )
 }
 
 script_classpath() {
-  echo "$(cs_fetch --default "${scala_library}" ${dependencies} | \
-          sort -ds | \
-          awk '{printf("%s:", $0)}'
-         )${classpath_root}"
+  echo "$(
+    cs_fetch --default "${scala_library}" "${dependencies}" |
+      sort -ds |
+      awk '{printf("%s:", $0)}'
+  )${classpath_root}"
 }
 
 get_package() {
@@ -562,17 +607,16 @@ get_package() {
 }
 
 detect_main_class() {
-  PATH="$(p_with_custom_java)" javap "${classpath_root}/$(get_package | tr . / )"*.class | \
-    tr -d "\n\r" | \
-    sed 's/Compiled from/\r\nCompiled from/g' | \
-    grep -F 'public static void main(java.lang.String[])' | \
-    sed 's/.*class //g' | \
+  PATH="$(p_with_custom_java)" javap "${classpath_root}/$(get_package | tr . /)"*.class |
+    tr -d "\n\r" |
+    sed 's/Compiled from/\r\nCompiled from/g' |
+    grep -F 'public static void main(java.lang.String[])' |
+    sed 's/.*class //g' |
     sed 's/ .*//g'
 }
 
 get_main_class() {
-  if [ -z "${main_class}" ]
-  then
+  if [ -z "${main_class}" ]; then
     detect_main_class
   else
     echo "${main_class}"
@@ -596,12 +640,11 @@ exec_ammonite() {
 }
 
 show_log_and_quit() {
-  if [ "${verbose}" != "true" ]
-  then
-    >&2 echo
-    >&2 echo Full log:
-    >&2 echo ---------
-    >&2 cat "${tsk_log}"
+  if [ "${verbose}" != "true" ]; then
+    echo >&2
+    echo >&2 Full log:
+    echo >&2 ---------
+    cat >&2 "${tsk_log}"
   fi
   rm "${tsk_log}" 2> /dev/null
   exec false
@@ -609,10 +652,9 @@ show_log_and_quit() {
 
 run() {
   set -o pipefail
-  if prepare_for_running_with_bloop && prepare_native_binary
-  then
+  if prepare_for_running_with_bloop && prepare_native_binary; then
     rm "${tsk_log}" 2> /dev/null
-    grep -q "$(all_inputs_sha)" "${native_image_input_summary_file}" 2> /dev/null && \
+    grep -q "$(all_inputs_sha)" "${native_image_input_summary_file}" 2> /dev/null &&
       eval "$(printf "%s" "exec \"${native_image}\" $(
         seq "${argc}" | awk '{printf "\"$arg_" $1 "\" "}'
       )")"
@@ -626,8 +668,7 @@ run() {
 
 run_with_ammonite() {
   set -o pipefail
-  if install_coursier && install_ammonite
-  then
+  if install_coursier && install_ammonite; then
     rm "${tsk_log}" 2> /dev/null
     eval "$(printf "%s" "exec_ammonite $(
       seq "${argc}" | awk '{printf "\"$arg_" $1 "\" "}'
@@ -643,9 +684,8 @@ i=1
 argc="$#"
 # arg is used within eval
 # shellcheck disable=SC2034
-for arg in "$@"
-do
+for arg in "$@"; do
   eval "arg_$i=\"\${arg}\""
-  i=$(( i + 1 ))
+  i=$((i + 1))
 done
 unset i

@@ -1,2 +1,2 @@
-/examples/joke/.bloop/
-/.idea/
+.bloop
+.idea

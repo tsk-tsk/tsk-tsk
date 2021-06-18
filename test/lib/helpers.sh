@@ -43,10 +43,10 @@ coursierJavaHome() {
 # All github links get replaced with raw.githubusercontent.com forms
 # (to not have to rely on every version be exposed at git.io)
 preamble() {
-  sed "s|TSK_BIN|${tsk_bin}|g;
-       s/VERSION/${tsk_version}/g;
-       s/SETTINGS/${2}/g;
-       s|git.io/boot-tsk-${tsk_version}|raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/boot-tsk|g;
+  sed "s|TSK_BIN|${tsk_bin}|g
+       s/VERSION/${tsk_version}/g
+       s/SETTINGS/${2}/g
+       s|git.io/boot-tsk-${tsk_version}|raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/boot-tsk|g
        s|git.io/boot-tsk-\\\$v|raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/boot-tsk|g" \
       "./doc/preambles/${1}"
 }
@@ -66,7 +66,8 @@ assertScriptFailed() {
 
 assertStandardErrorEmpty() {
   assertEquals "Standard error was expected to be empty, but it was:\n[$(
-    cat "${standard_error_file}")]" "${1}" "$(cat "${standard_error_file}")"
+    cat "${standard_error_file}"
+  )]" "${1}" "$(cat "${standard_error_file}")"
 }
 
 assertStandardErrorContains() {
