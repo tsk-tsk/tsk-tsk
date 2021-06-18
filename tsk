@@ -206,11 +206,36 @@ get_sha_sum() {
     shasum -a 256
   fi
 }
-p_with_custom_java() {
-  echo "$(${cs_cmd} java-home -q --mode offline --jvm "${java_version}")/bin:${PATH}"
+
+cached_cs_java_home=""
+cs_java_home() {
+  [ -n "$cached_cs_java_home" ] && echo "$cached_cs_java_home" && return 0
+  local value
+  (value="$(${cs_cmd} java-home --mode offline --jvm "${java_version}" "${@}")" || return $?)
+  cached_cs_java_home="$value"
+  echo "$cached_cs_java_home"
 }
+
+cached_cs_graalvm_home=""
+cs_graalvm_home() {
+  [ -n "$cached_cs_graalvm_home" ] && echo "$cached_cs_graalvm_home" && return 0
+  local value
+  (value="$(${cs_cmd} java-home --mode offline --jvm "graalvm:${graalvm_version}" "${@}")" || return $?)
+  cached_cs_graalvm_home="$value"
+  echo "$cached_cs_graalvm_home"
+}
+
+
+cached_p_with_custom_java=""
+p_with_custom_java() {
+  [ -z "$cached_p_with_custom_java" ] &&
+    cached_p_with_custom_java="$(cs_java_home)/bin:${PATH}"
+  echo "$cached_p_with_custom_java"
+}
+
 download_as=$(command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo")
 module="$(basename "${script_file}" | sed 's/\.scala//g')"
+os=$(uname)
 
 # bloop and coursier internals
 bloop_dir="${script_dir}/.bloop"
@@ -262,21 +287,21 @@ cs_fetch() {
 }
 
 install_java() {
-  ${cs_cmd} java-home --jvm "${java_version}" --mode offline > /dev/null 2>&1 && return 0
+  cs_java_home --mode offline > /dev/null 2>&1 && return 0;
   echo "Installing Java Virtual Machine" | log_as progress
-  ${cs_cmd} java-home --jvm "${java_version}" --progress 2>&1 > /dev/null | log_as progress
+  cs_java_home --progress 2>&1 > /dev/null | log_as progress
 }
 
 install_graalvm() {
-  ${cs_cmd} java-home --jvm "graalvm:${graalvm_version}" --mode offline > /dev/null 2>&1 && return 0
+  cs_graalvm_home --mode offline > /dev/null 2>&1 && return 0;
   echo "Installing GraalVM" | log_as progress
-  ${cs_cmd} java-home --jvm "graalvm:${graalvm_version}" --progress 2>&1 > /dev/null | log_as progress
+  cs_graalvm_home --progress 2>&1 > /dev/null | log_as progress
 }
 
 install_native_image_generator() {
-  [ -e "$(${cs_cmd} java-home --jvm graalvm:"${graalvm_version}")/bin/native-image" ] && return 0
+  [ -e "$(cs_graalvm_home)/bin/native-image" ] && return 0;
   echo "Installing GraalVM native-image utility" | log_as progress
-  "$(${cs_cmd} java-home --jvm graalvm:"${graalvm_version}")/bin/gu" install native-image 2>&1 > /dev/null | log_as progress
+  "$(cs_graalvm_home)/bin/gu" install native-image 2>&1 > /dev/null | log_as progress
 }
 
 install_coursier() {
@@ -508,7 +533,7 @@ prepare_native_binary() {
   )
   echo "Building native image" | log_as progress
   (
-    "$(${cs_cmd} java-home --jvm graalvm:"${graalvm_version}")/bin/native-image" \
+    $(cs_graalvm_home)/bin/native-image \
       -cp "$(script_classpath)" \
       --install-exit-handlers \
       -H:Class="$(get_main_class)" \
