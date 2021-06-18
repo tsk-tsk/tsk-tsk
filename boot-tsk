@@ -1,3 +1,4 @@
+#!/bin/sh
 # This boot-tsk script ensures that the proper version of the main TSK file is present (`v` or `tsk_version` variable)
 # and depending on its success outputs either:
 # 1) the tsk file name
@@ -25,14 +26,12 @@ boot_tsk_url="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/${tsk_version}/b
 download_as() {
   download_failed="Failed to download a necessary file."
   advice="Please ensure the version '${tsk_version}' is valid, the URL is correct and that internet connection (DNS, proxy) works."
-  if command -v curl > /dev/null
-  then
+  if command -v curl > /dev/null; then
     curl -fLo "$@" >> "${tsk_log}" 2>&1 || fatal_error "
 ${download_failed}
 The command used: 'curl -fLo $*'.
 ${advice}"
-  elif command -v wget > /dev/null
-  then
+  elif command -v wget > /dev/null; then
     wget -O "$@" >> "${tsk_log}" 2>&1 || fatal_error "
 ${download_failed}
 The command used: 'wget -O $*'.
@@ -46,7 +45,7 @@ fatal_error() {
   path_to_error_notifier_program="${TEMP:-/tmp}/tsk-report-error-for-pid-$$"
   cat > "${path_to_error_notifier_program}" << EOF
 >&2 echo "$@"
->&2 [ -e "${tsk_log}" ] && [ "$( <"${tsk_log}" wc -w )" != "0" ] && {
+>&2 [ -e "${tsk_log}" ] && [ "$(wc < "${tsk_log}" -w)" != "0" ] && {
   >&2 echo "Futher information from the logs:"
   cat "${tsk_log}"
 }
