@@ -604,7 +604,10 @@ prepare_java() {
 }
 
 prepare_for_running_with_bloop() {
-  prepare_java
+  prepare_java || {
+    log_fatal "Could not install Java"
+    return 1
+  }
   install_bloop || {
     log_fatal "Could not install Bloop"
     return 1
