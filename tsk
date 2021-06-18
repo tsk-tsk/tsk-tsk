@@ -47,6 +47,8 @@ verbose="${verbose:-just_progress}"
 coursier_version="${coursier_version:-v2.0.12}"
 
 # Version of Java Virtual Machine, necessary to launch Bloop and (after compilation) the script itself
+# A value of `system` prevents TSK from trying to download a JVM and expects an existing JVM to be available.
+# Once you have Coursier installed you can use `coursier java --available` to get a list of installable runtimes.
 java_version="${java_version:-8}"
 
 # Version of Java used at Alpine in order to bootstrap Coursier
@@ -186,11 +188,16 @@ all_sources_json_array() {
   echo "[ $(get_abs_sources | sed 's/\(.*\)/"\1",/g')
           \"$(get_abs_script_dir)/$(basename "${script_file}")\" ]"
 }
+
+
+os=$(uname)
 td=~/.tsk
+mkdir -p "$td" > /dev/null 2>&1 || (fatal_error "Directory '${td}' is required by script to be run.
+Make sure you have sufficient access rights and that no file with this name exists already."; exit 1)
 # work around https://github.com/coursier/coursier/issues/1856
 # shellcheck disable=SC2001
 bloop_cmd="${td}/bloop-$(echo "${bloop_version}" | sed 's/:/_/g')"
-cs_binary="${td}/cs-${coursier_version}"
+cs_binary="${td}/cs-${coursier_version}$([[ "system" = "$java_version" ]] && echo "-jvmless" || echo "-$os")"
 cs_cmd="${cs_binary} ${COURSIER_OPTS:-}"
 get_sha_sum() {
   if command -v sha256sum > /dev/null 2>&1; then
@@ -200,11 +207,10 @@ get_sha_sum() {
   fi
 }
 p_with_custom_java() {
-  echo "$(${cs_cmd} java-home --jvm "${java_version}")/bin:${PATH}"
+  echo "$(${cs_cmd} java-home -q --mode offline --jvm "${java_version}")/bin:${PATH}"
 }
 download_as=$(command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo")
 module="$(basename "${script_file}" | sed 's/\.scala//g')"
-os=$(uname)
 
 # bloop and coursier internals
 bloop_dir="${script_dir}/.bloop"
@@ -276,13 +282,18 @@ install_native_image_generator() {
 install_coursier() {
   [ -e "$cs_binary" ] && return 0
   cs_url_prefix="https://github.com/coursier/coursier/releases/download/${coursier_version}"
-  case "${os}" in
-    "Linux")
+  case "${os}/java-${java_version}" in
+    *"/java-system")
+      # When using java_version=system, just download the smallest coursier shell without JVM.
+      cs_url="${cs_url_prefix}/coursier"
+      command -v java > /dev/null 2>&1 || (log_fatal "Using jvm-less coursier but no system java present. Please install java first"; return 1)
+      ;;
+    "Linux"*)
       case "$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')" in
         "libc.musl")
           # Coursier isn't compiled against libc.musl yet (Alpine uses it), need to either have java already
           # or to have root permissions
-          if ! command -v java > /dev/null; then
+          if ! command -v java > /dev/null 2>&1; then
             if [ "$(whoami)" = "root" ]; then
               echo "Installing Java for Coursier" | log_as progress
               { apk update && apk add "${java_alpine}"; } 2>&1 | log_as progress
@@ -298,12 +309,12 @@ install_coursier() {
           ;;
       esac
       ;;
-    "Darwin")
+    "Darwin"*)
       cs_url="${cs_url_prefix}/cs-x86_64-apple-darwin"
       ;;
     *)
       cs_url="${cs_url_prefix}/coursier"
-      command -v java || (
+      command -v java > /dev/null 2>&1 || (
         log_fatal "Unknown system: ${os} and no java present. Please install java first"
         return 1
       )
@@ -538,15 +549,19 @@ EOF
   )
 }
 
-prepare_for_running_with_bloop() {
-  install_coursier || (
+prepare_java() {
+  install_coursier          || (
     log_fatal "Could not install Coursier"
     return 1
   )
-  install_java || (
+  install_java              || (
     log_fatal "Could not install Java Virtual Machine"
     return 1
   )
+}
+
+prepare_for_running_with_bloop() {
+  prepare_java
   install_bloop || (
     log_fatal "Could not install Bloop"
     return 1
