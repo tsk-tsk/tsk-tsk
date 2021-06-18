@@ -199,7 +199,7 @@ Make sure you have sufficient access rights and that no file with this name exis
 # work around https://github.com/coursier/coursier/issues/1856
 # shellcheck disable=SC2001
 bloop_binary="${td}/bloop-$(echo "${bloop_version}" | sed 's/:/_/g')"
-cs_binary="${td}/cs-${coursier_version}$(test "system" = "${java_version}" && echo "-jvmless" || echo "-${os}")"
+cs_binary="${td}/cs-${coursier_version}$([ "system" = "${java_version}" ] && echo "-jvmless" || echo "-${os}")"
 cs_cmd="${cs_binary} ${COURSIER_OPTS:-}"
 get_sha_sum() {
   if command -v sha256sum > /dev/null 2>&1; then
@@ -285,7 +285,7 @@ cs_fetch() {
     $(for repo in ${repositories}; do echo "-r ${repo}"; done) \
     $(for ver in ${forced_versions}; do echo "--force-version ${ver}"; done) \
     $(for org_artifact in ${exclusions}; do echo "--exclude ${org_artifact}"; done) \
-    "$@"
+    $*
 }
 
 install_java() {
