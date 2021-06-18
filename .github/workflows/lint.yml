@@ -1,0 +1,25 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Check shell code
+        uses: luizm/action-sh-checker@v0.2.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHFMT_OPTS: "-i 2 -ci -sr -d"
+          SHELLCHECK_OPTS: "-s bash -x"
+        with:
+          sh_checker_comment: true
+          sh_checker_checkbashisms_enable: true
+          sh_checker_exclude: "test/lib/shunit2 test/lib/helpers.sh" # helpers is sourced by tests
