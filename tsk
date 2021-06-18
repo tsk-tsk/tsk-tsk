@@ -545,7 +545,7 @@ prepare_native_binary() {
       --report-unsupported-elements-at-runtime \
       --enable-url-protocols=https,http \
       --enable-all-security-services \
-      --initialize-at-build-time="scala.Symbol,scala.Function1,scala.Function2,scala.runtime.StructuralCallSite,scala.runtime.EmptyMethodCache,scala.runtime.Statics$VM" \
+      --initialize-at-build-time="scala.Symbol,scala.Function1,scala.Function2,scala.runtime.StructuralCallSite,scala.runtime.EmptyMethodCache,scala.runtime.Statics\$VM" \
       --no-fallback "$(get_main_class)" "${native_image}" 2>&1 | log_as progress
   ) && (all_inputs_sha > "${native_image_input_summary_file}")
 }
