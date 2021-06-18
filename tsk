@@ -273,7 +273,7 @@ cs_fetch() {
 
 install_java() {
   [ -n "${cached_cs_java_home}" ] && return 0
-  temp_file="${TMPDIR}/tsk-??-java-home"
+  temp_file="tsk-$$-java-home"
   ${cs_cmd} java-home --jvm "${java_version}" --mode offline > "${temp_file}" 2>&1
   result=$?
   if [ $result -ne 0 ]; then
@@ -290,7 +290,7 @@ install_java() {
 
 install_graalvm() {
   [ -n "${cached_cs_graalvm_home}" ] && return 0
-  temp_file="${TMPDIR}/tsk-??-graalvm-home"
+  temp_file="tsk-$$-graalvm-home"
   ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --mode offline > "${temp_file}" 2>&1;
   result=$?
   if [ $result -ne 0 ]; then
