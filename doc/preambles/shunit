@@ -1,0 +1,6 @@
+/// Preamble for running tests with tsk from working dir 2> /dev/null
+/*
+SETTINGS
+source 'TSK_BIN'
+run
+*/
