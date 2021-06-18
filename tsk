@@ -139,6 +139,8 @@ safely_source() {
   }
   rm "${tsk_user_settings_tmp}"
 
+  # For now the debug mode (safe sourcing) will be restricted to Bash only
+  # shellcheck disable=SC2039
   shopt -u expand_aliases
   unalias . source cat curl wget sh
   unalias run_with_ammonite run
@@ -196,8 +198,8 @@ mkdir -p "$td" > /dev/null 2>&1 || (fatal_error "Directory '${td}' is required b
 Make sure you have sufficient access rights and that no file with this name exists already."; exit 1)
 # work around https://github.com/coursier/coursier/issues/1856
 # shellcheck disable=SC2001
-bloop_cmd="${td}/bloop-$(echo "${bloop_version}" | sed 's/:/_/g')"
-cs_binary="${td}/cs-${coursier_version}$([[ "system" = "${java_version}" ]] && echo "-jvmless" || echo "-${os}")"
+bloop_binary="${td}/bloop-$(echo "${bloop_version}" | sed 's/:/_/g')"
+cs_binary="${td}/cs-${coursier_version}$(test "system" = "${java_version}" && echo "-jvmless" || echo "-${os}")"
 cs_cmd="${cs_binary} ${COURSIER_OPTS:-}"
 get_sha_sum() {
   if command -v sha256sum > /dev/null 2>&1; then
@@ -351,7 +353,7 @@ install_coursier() {
 }
 
 install_bloop() {
-  [ -e "${bloop_cmd}" ] && return 0
+  [ -e "${bloop_binary}" ] && return 0
   echo "Installing Bloop" | log_as progress
   # First try to install bloop prebuilt binary (~4k) otherwise simply bootstrap (~30M) with coursier.
   # The prebuilt binary is preferred since it will be faster since coursier bootstrapped binaries DO perform JVM startup.
@@ -533,7 +535,7 @@ prepare_native_binary() {
   )
   echo "Building native image" | log_as progress
   (
-    $(cs_graalvm_home)/bin/native-image \
+    "$(cs_graalvm_home)"/bin/native-image \
       -cp "$(script_classpath)" \
       --install-exit-handlers \
       -H:Class="$(get_main_class)" \
@@ -586,11 +588,11 @@ EOF
 }
 
 prepare_java() {
-  install_coursier          || (
+  install_coursier || (
     log_fatal "Could not install Coursier"
     return 1
   )
-  install_java              || (
+  install_java || (
     log_fatal "Could not install Java Virtual Machine"
     return 1
   )
