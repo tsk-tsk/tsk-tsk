@@ -194,8 +194,11 @@ all_sources_json_array() {
 
 os=$(uname)
 td=~/.tsk
-mkdir -p "$td" > /dev/null 2>&1 || (fatal_error "Directory '${td}' is required by script to be run.
-Make sure you have sufficient access rights and that no file with this name exists already."; exit 1)
+mkdir -p "$td" > /dev/null 2>&1 || {
+  fatal_error "Directory '${td}' is required by script to be run.
+Make sure you have sufficient access rights and that no file with this name exists already."
+  exit 1
+}
 # work around https://github.com/coursier/coursier/issues/1856
 # shellcheck disable=SC2001
 bloop_binary="${td}/bloop-$(echo "${bloop_version}" | sed 's/:/_/g')"
@@ -273,7 +276,7 @@ cs_fetch() {
 
 install_java() {
   [ -n "${cached_cs_java_home}" ] && return 0
-  temp_file="tsk-$$-java-home"
+  temp_file="${TMPDIR:-"/tmp"}/tsk-$$-java-home"
   ${cs_cmd} java-home --jvm "${java_version}" --mode offline > "${temp_file}" 2>&1
   result=$?
   if [ $result -ne 0 ]; then
@@ -290,7 +293,7 @@ install_java() {
 
 install_graalvm() {
   [ -n "${cached_cs_graalvm_home}" ] && return 0
-  temp_file="tsk-$$-graalvm-home"
+  temp_file="${TMPDIR:-"/tmp"}/tsk-$$-graalvm-home"
   ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --mode offline > "${temp_file}" 2>&1;
   result=$?
   if [ $result -ne 0 ]; then
@@ -306,7 +309,7 @@ install_graalvm() {
 }
 
 install_native_image_generator() {
-  [ -e "${cached_cs_graalvm_home}/bin/native-image" ] && return 0;
+  [ -e "${cached_cs_graalvm_home}/bin/native-image" ] && return 0
   echo "Installing GraalVM native-image utility" | log_as progress
   "${cached_cs_graalvm_home}/bin/gu" install native-image 2>&1 > /dev/null | log_as progress
 }
@@ -318,7 +321,10 @@ install_coursier() {
     *"/java-system")
       # When using java_version=system, just download the smallest coursier shell without JVM.
       cs_url="${cs_url_prefix}/coursier"
-      command -v java > /dev/null 2>&1 || (log_fatal "Using jvm-less coursier but no system java present. Please install java first"; return 1)
+      command -v java > /dev/null 2>&1 || {
+        log_fatal "Using jvm-less coursier but no system java present. Please install java first"
+        return 1
+      }
       ;;
     "Linux"*)
       case "$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')" in
@@ -346,10 +352,10 @@ install_coursier() {
       ;;
     *)
       cs_url="${cs_url_prefix}/coursier"
-      command -v java > /dev/null 2>&1 || (
+      command -v java > /dev/null 2>&1 || {
         log_fatal "Unknown system: ${os} and no java present. Please install java first"
         return 1
-      )
+      }
       ;;
   esac
   echo "Installing Coursier" | log_as progress
