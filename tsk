@@ -73,10 +73,10 @@ case "${scala_version}" in
     scala_binary_version="${scala_version}"
     ;;
   2*)
-    scala_binary_version="$(echo "${scala_version}" | sed 's/\([0-9]*\.[0-9]*\)\..*/\1/g')"
+    scala_binary_version="$(echo "${scala_version}" | sed 's|\([0-9]*\.[0-9]*\)\..*|\1|g')"
     ;;
   3*)
-    scala_binary_version="$(echo "${scala_version}" | sed 's/\([0-9]*\)\..*/\1/g')"
+    scala_binary_version="$(echo "${scala_version}" | sed 's|\([0-9]*\)\..*|\1|g')"
     ;;
 esac
 
@@ -153,8 +153,8 @@ script_file="$(echo "$0" | grep -q '\.sca\?l\?a\?$' && echo "${0}" || echo "${1}
 [ -e "${script_file}" ] || (
   fatal_error \
     "tsk must be sourced in one of two supported ways:
-1) from within a *.scala/*.sc file (normal operation) or
-2) with a *.scala/*.sc file argument (. ~/.tsk/tsk-x.y.z Foo.scala) - for debugging
+1) from within a *.scala / *.sc file (normal operation) or
+2) with a *.scala / *.sc file argument (. ~/.tsk/tsk-x.y.z Foo.scala) - for debugging
 
 instead found: [${script_file}]
 the arguments were: [$0 $*]"
@@ -294,7 +294,7 @@ install_java() {
 install_graalvm() {
   [ -n "${cached_cs_graalvm_home}" ] && return 0
   temp_file="${TMPDIR:-"/tmp"}/tsk-$$-graalvm-home"
-  ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --mode offline > "${temp_file}" 2>&1;
+  ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --mode offline > "${temp_file}" 2>&1
   result=$?
   if [ $result -ne 0 ]; then
     echo "Installing GraalVM" | log_as progress
@@ -327,8 +327,8 @@ install_coursier() {
       }
       ;;
     "Linux"*)
-      case "$(ldd /bin/sh | awk '/libc/ {print $1}' | sed 's/-.*//g')" in
-        "libc.musl")
+      case "$(ldd /bin/sh | awk '/libc/ {print $1}')" in
+        "libc.musl"*)
           # Coursier isn't compiled against libc.musl yet (Alpine uses it), need to either have java already
           # or to have root permissions
           if ! command -v java > /dev/null 2>&1; then
@@ -658,8 +658,8 @@ detect_main_class() {
     tr -d "\n\r" |
     sed 's/Compiled from/\r\nCompiled from/g' |
     grep -F 'public static void main(java.lang.String[])' |
-    sed 's/.*class //g' |
-    sed 's/ .*//g'
+    sed 's|.*class ||g' |
+    sed 's| .*||g'
 }
 
 get_main_class() {
