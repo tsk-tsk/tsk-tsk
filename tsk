@@ -3,6 +3,16 @@
 # Variables and functions designed to be overridden by the user
 # -------------------------------------------------------------
 
+# TSK only ever outputs its diagnostic information to standard error, so your script's standard output stays unpolluted.
+# The verbosity can be fined tuned by setting the `verbose` variable to:
+#
+# - false - output log to standard error only on TSK failure, don't output anything if all goes well
+# - just_progress (default) - output just the information about download progress, or everything if an error happened
+# - true - output all diagnostic information to the standard error in the real time
+# - debug - like true, but also output all commands executed by shell (`set -x`)
+verbose="${verbose:-just_progress}"
+[ "${verbose}" = "debug" ] && set -x
+
 # Version of Scala to be used in compilation and in resolution of libraries
 scala_version="${scala_version:-2.12.13}"
 
@@ -34,14 +44,6 @@ main_class="${main_class:-}"
 # during all change-intensive periods of script development (for example at the beginning)
 # and to switch it to `true` after the script is deemed "ready".
 native="${native:-false}"
-
-# TSK only ever outputs its diagnostic information to standard error, so your script's standard output stays unpolluted.
-# The verbosity can be fined tuned by setting the `verbose` variable to:
-#
-# - false - output log to standard error only on TSK failure, don't output anything if all goes well
-# - just_progress (default) - output just the information about download progress, or everything if an error happened
-# - true - output all diagnostic information to the standard error in the real time
-verbose="${verbose:-just_progress}"
 
 # Version of Coursier, the workhorse for JVM and library fetching
 coursier_version="${coursier_version:-v2.0.16}"
@@ -225,7 +227,7 @@ download_as=$(command -v wget > /dev/null && echo "wget -O" || echo "curl -fLo")
 module="$(basename "${script_file}" | sed 's/\.scala//g')"
 os=$(uname)
 
-# bloop and coursier internals
+# Bloop and Coursier internals
 bloop_dir="${script_dir}/.bloop"
 bloop_module_config="${bloop_dir}/${module}.json"
 tsk_meta="${bloop_dir}/${module}/tsk"
