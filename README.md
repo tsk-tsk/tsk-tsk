@@ -80,7 +80,7 @@ URLGrep script using Scala and TSK in a couple of minutes by following the steps
 
 1. Save the following snippet into `URLGrep.scala` file (or [download it](https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/trunk/examples/urlgrep/URLGrep.scala)):
 ```scala
-// 2> /dev/null; source $(curl -sL https://git.io/boot-tsk | sh); run; exit
+// 2> /dev/null; . $(curl -sL https://git.io/boot-tsk | sh); run; exit
 
 object URLGrep {
 

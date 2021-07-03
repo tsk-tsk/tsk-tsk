@@ -1,5 +1,8 @@
 /// TSK - The Scripting Kit      2> /dev/null \\\
 /*
 SETTINGS
-v=VERSION; source $(u=git.io/boot-tsk-$v; (cat ~/.tsk/boot-tsk-$v || curl -sfL $u || wget -qO - $u) | v=$v sh); run
- */
+export v=VERSION
+. $(b=boot-tsk-$v u=git.io/$b; (cat ~/.tsk/$b || curl -sfL $u || wget -qO - $u) | sh)
+run
+exit
+*/

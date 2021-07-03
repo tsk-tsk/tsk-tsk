@@ -6,12 +6,12 @@
 # the only purpose of which is to describe what went wrong and exit with error code (1).
 #
 # In both cases it should be safe to call the script from an external program the following way:
-# source $( curl boot-tsk-url | sh )
+# . $( curl boot-tsk-url | sh )
 #
 # so in the successful case the TSK will be sourced (and its definitions will come into the current scope)
 # and in the case of error the failure will be reported nicely and program will exit
 # (note that if you want to call it from an interactive shell you need to use a subshell (wrap it with parens):
-# ( source $( curl boot-tsk-url | sh ) ), because on error it would end your shell session ).
+# ( . $( curl boot-tsk-url | sh ) ), because on error it would end your shell session ).
 #
 # The TSK versions present on disk are left alone unless the version is trunk (meaning "latest"),
 # in which case this script tries to download the most recent version of itself and of TSK.

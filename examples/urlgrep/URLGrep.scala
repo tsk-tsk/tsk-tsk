@@ -1,4 +1,4 @@
-// 2> /dev/null; source $(curl -sL https://git.io/boot-tsk | sh); run; exit
+// 2> /dev/null; . $(curl -sL https://git.io/boot-tsk | sh); run; exit
 
 object URLGrep {
 

@@ -1,4 +1,4 @@
-// 2> /dev/null; native=true; source $(curl -sL https://git.io/boot-tsk | sh); run; exit
+// 2> /dev/null; native=true; . $(curl -sL https://git.io/boot-tsk | sh); run; exit
 
 object HelloUnix extends App {
 
