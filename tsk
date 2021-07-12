@@ -193,7 +193,6 @@ all_sources_json_array() {
           \"$(get_abs_script_dir)/$(basename "${script_file}")\" ]"
 }
 
-
 os=$(uname)
 td=~/.tsk
 mkdir -p "$td" > /dev/null 2>&1 || {
@@ -634,7 +633,7 @@ prepare_for_running_with_bloop() {
     fatal_error "Error while pre-warming Bloop"
     return 1
   }
-  (
+  ( 
     (
       PATH="$(p_with_custom_java)" "${bloop_binary}" compile --config-dir "${script_dir}/.bloop" "${module}" 2>&1 | log_as progress
     ) && (all_inputs_sha > "${compilation_input_summary_file}")

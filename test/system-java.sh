@@ -6,7 +6,7 @@ testUsingSystemJavaShouldNotDownloadJVM() {
     echo 'object PieceOfCake extends App { println("ok") }'
   } | saveAsScript "${wd}/Easy.scala"
 
-  ( # Using a sub-shell to keep these variables scoped
+  (# Using a sub-shell to keep these variables scoped
     export JAVA_HOME="$javaHome"
     export PATH="$javaHome/bin:$PATH"
     export HOME="$homeDir"
