@@ -5,7 +5,8 @@
 
 Truly Standalone Scala Scripts on Linux and Mac.
 
-<img alt="AppVeyor CI" src="https://ci.appveyor.com/api/projects/status/github/tsk-tsk/tsk-tsk?branch=trunk&svg=true">
+<img alt="status of tests" src="https://github.com/tsk-tsk/tsk-tsk/actions/workflows/test.yml/badge.svg">
+<img alt="lint" src="https://github.com/tsk-tsk/tsk-tsk/actions/workflows/lint.yml/badge.svg">
 
 </div>
 

@@ -1,6 +1,0 @@
-image:
-  - macos
-  - Ubuntu
-
-build_script:
-  - examples/joke/Joke.scala
