@@ -503,7 +503,7 @@ unjsonize_cs_report() {
   sed 's/"file":"\?/\nFILE /g
        s/"coord":"/\nCOORD /g
        s/,/\n/g
-       s/"/\n/g'  # this single quote character (") is needed because of a checkbashisms bug
+       s/"/\n/g' # this single quote character (") is needed because of a checkbashisms bug
 }
 
 just_file_and_coords() {
