@@ -266,7 +266,7 @@ compiler_deps="
 "
 
 cs_fetch() {
-  # shellcheck disable=SC2046
+  # shellcheck disable=SC2046,SC2048,SC2086
   # (the whole point is to make shell split the repositories and forced versions by words here)
   ${cs_cmd} fetch -q \
     --scala-version "${scala_version}" \
@@ -296,11 +296,11 @@ install_java() {
 install_graalvm() {
   [ -n "${cached_cs_graalvm_home}" ] && return 0
   temp_file="${TMPDIR:-"/tmp"}/tsk-$$-graalvm-home"
-  ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --mode offline > "${temp_file}" 2>&1
+  ${cs_cmd} java-home --jvm "graalvm:${graalvm_version}" --mode offline > "${temp_file}" 2>&1
   result=$?
   if [ $result -ne 0 ]; then
     echo "Installing GraalVM" | log_as progress
-    ${cs_cmd} java-home --jvm graalvm:${graalvm_version} --progress 2>&1 > "${temp_file}" | log_as progress
+    ${cs_cmd} java-home --jvm "graalvm:${graalvm_version}" --progress 2>&1 > "${temp_file}" | log_as progress
   fi
   result=$?
   if [ $result -eq 0 ]; then
@@ -374,6 +374,7 @@ install_bloop() {
 }
 
 install_bloop_prebuilt() {
+  # shellcheck disable=SC2001  # as replacement of .* doesn't work in Ash
   ${cs_cmd} install "bloop:$(echo "${bloop_version}" | sed 's/.*://g')" --only-prebuilt=true --install-dir "${td}" &&
     mv "${td}/bloop" "${bloop_binary}"
 }
@@ -685,6 +686,7 @@ install_ammonite() {
 }
 
 exec_ammonite() {
+  # shellcheck disable=SC2086 # as word-splitting is definitely what we want here for the Coursier command
   PATH="$(p_with_custom_java)" exec ${cs_cmd} launch ammonite -- "${script_file}" "$@"
 }
 
