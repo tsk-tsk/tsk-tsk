@@ -142,8 +142,8 @@ safely_source() {
   rm "${tsk_user_settings_tmp}"
 
   # For now the debug mode (safe sourcing) will be restricted to Bash only
-  # shellcheck disable=SC2039
-  shopt -u expand_aliases
+  # shellcheck disable=SC2039 # eval because of checkbashisms inability to add exceptions
+  eval shopt -u expand_aliases
   unalias . source cat curl wget sh
   unalias run_with_ammonite run
   unalias package import object case class trait implicit private
@@ -503,7 +503,7 @@ unjsonize_cs_report() {
   sed 's/"file":"\?/\nFILE /g
        s/"coord":"/\nCOORD /g
        s/,/\n/g
-       s/"/\n/g'
+       s/"/\n/g'  # this single quote character (") is needed because of a checkbashisms bug
 }
 
 just_file_and_coords() {
@@ -644,11 +644,13 @@ prepare_for_running_with_bloop() {
 }
 
 script_classpath() {
-  echo "$(
+  colon_separated_jars() {
     cs_fetch --default "${scala_library}" "${dependencies}" |
       sort -ds |
       awk '{printf("%s:", $0)}'
-  )${classpath_root}"
+  }
+
+  echo "$(colon_separated_jars)${classpath_root}"
 }
 
 get_package() {
