@@ -548,7 +548,7 @@ prepare_native_binary() {
   )
   echo "Building native image" | log_as progress
   (
-    "$(cs_graalvm_home)"/bin/native-image \
+    "${cached_cs_graalvm_home}"/bin/native-image \
       -cp "$(script_classpath)" \
       --install-exit-handlers \
       -H:Class="$(get_main_class)" \
