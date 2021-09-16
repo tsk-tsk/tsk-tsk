@@ -1,0 +1,22 @@
+name: Tests
+
+on:
+  push:
+    branches: [ trunk]
+  pull_request:
+    branches: [ trunk]
+
+jobs:
+  smoke-test:
+    runs-on: "ubuntu-latest"
+    container: ${{ matrix.distro }}
+    strategy:
+      matrix:
+        distro: [ "alpine", "fedora" ]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run smoke tests
+        run: ./test/smoke.sh
+      - name: Run main class detection tests
+        run: ./test/main-class-detection.sh
