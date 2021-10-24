@@ -1,4 +1,4 @@
-name: Tests
+name: Distro tests
 
 on:
   push:
@@ -18,5 +18,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Diagnose smoke tests on ${{ matrix.distro }}
+        run: cat test/smoke-portable.sh
       - name: Run smoke tests on ${{ matrix.distro }}
         run: . test/smoke-portable.sh
