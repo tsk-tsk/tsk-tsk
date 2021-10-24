@@ -1,3 +1,5 @@
+set -x
+
 testEchoToStandardOutput() {
 
   # set up
