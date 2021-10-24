@@ -10,7 +10,6 @@ testEchoToStandardOutput() {
   wd="${base_tmpdir}/$(date +%H-%M-%S-%N)"
   mkdir -p "${wd}"
 
-
   # Given a simple script
 
   # shellcheck disable=SC2016
@@ -27,11 +26,11 @@ testEchoToStandardOutput() {
   tearDown
 
   checkScriptExitCode() {
-    if [ $exit_code -eq 0 ]
-    then
+    if [ $exit_code -eq 0 ]; then
       true
     else
       echo "Incorrect exit code: $exit_code"
+    fi
   }
 
   checkScriptExitCode && checkStandard
