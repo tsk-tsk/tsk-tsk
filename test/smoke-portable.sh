@@ -16,7 +16,7 @@ testEchoToStandardOutput() {
 
   # shellcheck disable=SC2016
   scala_script='object Hello extends App { println("hello") }'
-  preamble shortest > "${wd}/Hello.scala"
+  preamble offline > "${wd}/Hello.scala"
   echo "${scala_script}" >> "${wd}/Hello.scala"
   chmod +x "${wd}/Hello.scala"
 
@@ -24,8 +24,9 @@ testEchoToStandardOutput() {
   $0 -c "${wd}/Hello.scala" > "${standard_output_file}" 2> "${standard_error_file}"
   exit_code=$?
 
-  # Then the exit code is zero and "hello" gets printed on standard output
   tearDown
+
+  # Then the exit code is zero and "hello" gets printed on standard output
 
   checkScriptExitCode() {
     if [ $exit_code -eq 0 ]; then
@@ -35,13 +36,13 @@ testEchoToStandardOutput() {
     fi
   }
 
-  checkScriptExitCode && checkStandard
-  assertScriptSuccessful
-  assertStandardErrorContains Total
-  assertStandardOutputEquals "hello"
+  checkScriptExitCode
 }
 
 tearDown() {
+  echo "This is contents of standard output"
+  echo "----------------------------------"
+  cat "${standard_output_file}"
   echo "This is contents of standard error"
   echo "----------------------------------"
   cat "${standard_error_file}"
