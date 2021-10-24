@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Run smoke tests
+      - name: Run smoke tests on ${{ matrix.os }}
         run: ./test/smoke.sh
-      - name: Run main class detection tests
+      - name: Run main class detection tests on ${{ matrix.os }}
         run: ./test/main-class-detection.sh

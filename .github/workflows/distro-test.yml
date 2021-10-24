@@ -12,11 +12,11 @@ jobs:
     container: ${{ matrix.distro }}
     strategy:
       matrix:
-        distro: [ "alpine", "fedora" ]
+        distro: [ "fedora" ]
+        include:
+          - distro: alpine
 
     steps:
       - uses: actions/checkout@v2
-      - name: Run smoke tests
-        run: ./test/smoke.sh
-      - name: Run main class detection tests
-        run: ./test/main-class-detection.sh
+      - name: Run smoke tests on ${{ matrix.distro }}
+        run: . test/smoke-portable.sh

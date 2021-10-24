@@ -1,4 +1,12 @@
-export tsk_version="$(git describe --exact-match 2> /dev/null || git rev-parse HEAD)"
+versionFromGit() {
+  git describe --exact-match 2> /dev/null || git rev-parse HEAD
+}
+
+isGitAvailable() {
+  command -v git 2> /dev/null >&2
+}
+
+export tsk_version="$(isGitAvailable && versionFromGit || echo current)"
 export tsk_bin="$(pwd)/tsk"
 
 emulateTskDownload() {
@@ -25,7 +33,7 @@ coursierJavaHome() {
     # Create an empty script just to source tsk utils
     script_file="${SHUNIT_TMPDIR}/empty.sc"
     touch "$script_file"
-    source "$tsk_bin" "$script_file"
+    . "$tsk_bin" "$script_file"
     rm "$script_file"
     prepare_java 1>&2 # install default java via coursier
     PATH="$(p_with_custom_java)" systemJavaHome
