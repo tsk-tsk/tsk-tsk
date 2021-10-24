@@ -20,6 +20,11 @@ testEchoToStandardOutput() {
   echo "${scala_script}" >> "${wd}/Hello.scala"
   chmod +x "${wd}/Hello.scala"
 
+  # check what's in the script
+  echo "The script's contents"
+  echo "---------------------"
+  cat "${wd}/Hello.scala"
+
   # When it's run
   $0 -c "${wd}/Hello.scala" > "${standard_output_file}" 2> "${standard_error_file}"
   exit_code=$?
