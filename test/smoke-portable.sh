@@ -16,6 +16,9 @@ testEchoToStandardOutput() {
 
   # shellcheck disable=SC2016
   scala_script='object Hello extends App { println("hello") }'
+  # version of TSK hardcoded for now
+  # TODO keep in sync with released versions
+  export tsk_version=1.5.0
   preamble offline > "${wd}/Hello.scala"
   echo "${scala_script}" >> "${wd}/Hello.scala"
   chmod +x "${wd}/Hello.scala"
