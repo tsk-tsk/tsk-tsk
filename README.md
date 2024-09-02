@@ -1,4 +1,11 @@
 <div align="center">
+  <h1>This project is temporarily unmaintained</h1>
+  <p>For the best-in-class Scala scripting support, please check out <a href="https://scala-cli.virtuslab.org/">Scala CLI</a>.</p>
+  <p>It has all the features of TSK - The Scripting Kit, and more.</p>
+  <p>The only missing capability of Scala CLI is the ability to run on a fresh machine or container. One needs to install it first.</p>
+  <p>In theory, TSK's internals could be replaced to leverage Scala CLI, so if you miss the above feature, please tell me in GitHub issues. I will try to find some time to do it.</p>
+</div>
+<div align="center">
 <img src="https://raw.githubusercontent.com/tsk-tsk/tsk-tsk/trunk/doc/img/tsk-tsk-logo.png" alt="logo" width="20%" height="20%">
 
 # TSK - The Scripting Kit
